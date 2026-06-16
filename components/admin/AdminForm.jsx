@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const TABS = [
-  { id: "contatos", label: "Contatos" },
-  { id: "imoveis", label: "Imóveis" },
-  { id: "capa", label: "Capa" },
-  { id: "marca", label: "Marca & Cores" },
-  { id: "menu", label: "Menu & Contato" },
-  { id: "secoes", label: "Seções da Home" },
-  { id: "form", label: "Formulário" },
-  { id: "rodape", label: "Rodapé" },
+  { id: "contatos", label: "Contatos", icon: "M22 5H2v14h20zM2 6l10 7 10-7" },
+  { id: "imoveis", label: "Imóveis", icon: "M3 11l9-8 9 8M5 9.5V21h14V9.5" },
+  { id: "capa", label: "Capa", icon: "M3 4h18v16H3zM3 16l5-5 4 4 3-3 6 6M8 9a1 1 0 1 0 0 .01" },
+  { id: "marca", label: "Marca & Cores", icon: "M20.6 12.6 12 4H4v8l8.6 8.6a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8zM7.5 7.5h.01" },
+  { id: "menu", label: "Menu & Contato", icon: "M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z" },
+  { id: "secoes", label: "Seções da Home", icon: "M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5" },
+  { id: "form", label: "Formulário", icon: "M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3M9 4a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1M8 12h8M8 16h5" },
+  { id: "rodape", label: "Rodapé", icon: "M3 4h18v16H3zM3 15h18" },
 ];
 
 const OPERATIONS = ["Venda", "Aluguel", "Financiamento"];
@@ -72,33 +72,63 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
     window.location.reload();
   }
 
+  // some o aviso de sucesso sozinho
+  useEffect(() => {
+    if (msg?.type === "ok") {
+      const t = setTimeout(() => setMsg(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [msg]);
+
+  const unread = leads.filter((l) => !l.read).length;
+  const badges = { contatos: unread || null, imoveis: properties.length || null };
+
   return (
-    <div className="min-h-screen bg-[#f3f4f6] text-ink">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-black/10 bg-white px-6 py-3 shadow-sm">
-        <div className="font-poppins text-lg font-semibold">
-          Paula <span className="text-primary-dark">Regina</span>
-          <span className="ml-2 text-sm font-normal text-ink-muted">· Admin</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <a href="/" target="_blank" className="text-sm text-ink-secondary underline hover:text-ink">Ver site ↗</a>
-          <button onClick={logout} className="text-sm text-ink-secondary hover:text-ink">Sair</button>
-          <button onClick={save} disabled={saving} className="rounded-lg bg-ink px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-ink-secondary disabled:opacity-60">
-            {saving ? "Salvando..." : "Salvar alterações"}
-          </button>
+    <div className="min-h-screen bg-[#f1f3f5] text-ink">
+      {/* Cabeçalho */}
+      <header className="sticky top-0 z-30 border-b border-black/10 bg-white/95 shadow-sm backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
+          <div className="flex items-center gap-2 font-poppins text-lg font-semibold">
+            {data.brand?.name} <span className="text-primary-dark">{data.brand?.nameHighlight}</span>
+            <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs font-medium text-ink-muted">Painel</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <a href="/" target="_blank" className="hidden items-center gap-1 rounded-lg px-3 py-2 text-sm text-ink-secondary hover:bg-black/5 sm:flex">
+              Ver site
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17 17 7M9 7h8v8" /></svg>
+            </a>
+            <button onClick={logout} className="rounded-lg px-3 py-2 text-sm text-ink-secondary hover:bg-black/5">Sair</button>
+            <button onClick={save} disabled={saving} className="flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-ink-secondary disabled:opacity-60">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8" /></svg>
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
         </div>
       </header>
 
-      {msg && (
-        <div className={`px-6 py-2 text-sm ${msg.type === "ok" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{msg.text}</div>
-      )}
-
-      <div className="mx-auto flex max-w-6xl gap-6 px-6 py-6">
-        <nav className="flex w-48 shrink-0 flex-col gap-1">
-          {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} className={`rounded-lg px-4 py-2.5 text-left text-sm font-medium transition-colors ${tab === t.id ? "bg-ink text-white" : "text-ink-secondary hover:bg-black/5"}`}>
-              {t.label}
-            </button>
-          ))}
+      <div className="mx-auto max-w-6xl px-4 py-5 md:px-6 lg:flex lg:gap-6">
+        {/* Navegação: abas roláveis no mobile, sidebar no desktop */}
+        <nav className="no-scrollbar -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6 lg:mx-0 lg:mb-0 lg:w-60 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
+          {TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors lg:w-full ${active ? "bg-ink text-white shadow-sm" : "bg-white text-ink-secondary hover:bg-black/5 lg:bg-transparent"}`}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <path d={t.icon} />
+                </svg>
+                {t.label}
+                {badges[t.id] != null && (
+                  <span className={`ml-auto hidden rounded-full px-1.5 text-[11px] font-semibold lg:inline ${active ? "bg-white/25 text-white" : "bg-primary/20 text-primary-dark"}`}>
+                    {badges[t.id]}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="min-w-0 flex-1 space-y-6">
@@ -112,6 +142,13 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
           {tab === "rodape" && <RodapeTab data={data} patch={patch} />}
         </div>
       </div>
+
+      {/* Toast flutuante de status */}
+      {msg && (
+        <div className={`fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg ${msg.type === "ok" ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
+          {msg.text}
+        </div>
+      )}
     </div>
   );
 }
