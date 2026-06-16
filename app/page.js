@@ -42,7 +42,7 @@ export default async function Home() {
       <CorpRibbon ribbon={c.ribbon} />
       <AboutSection about={c.about} contact={c.contact} />
       <FeaturedCarousel properties={featured} featured={c.featured} />
-      <CitiesSection cities={c.cities} />
+      <CitiesSection cities={c.cities} properties={all} />
       <RegisterForm register={c.register} />
       <Footer brand={c.brand} contact={c.contact} footer={c.footer} />
       <WhatsAppFloat contact={c.contact} />

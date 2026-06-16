@@ -415,7 +415,7 @@ function SecoesTab({ data, patch, setSection }) {
         <div className="grid grid-cols-3 gap-3">
           <Field label="Título" value={f.heading} onChange={(v) => patch("featured", "heading", v)} />
           <Field label="Título destacado" value={f.headingHighlight} onChange={(v) => patch("featured", "headingHighlight", v)} />
-          <Field label='Texto "Ver mais"' value={f.seeMore} onChange={(v) => patch("featured", "seeMore", v)} />
+          <Field label="Texto do link ao lado do título (vai para a lista de imóveis)" value={f.seeMore} onChange={(v) => patch("featured", "seeMore", v)} />
         </div>
         <p className="text-xs text-ink-muted">Os imóveis exibidos aqui são os marcados como “destaque” na aba Imóveis.</p>
       </Card>
@@ -425,13 +425,10 @@ function SecoesTab({ data, patch, setSection }) {
           <Field label="Título" value={ci.heading} onChange={(v) => patch("cities", "heading", v)} />
           <Field label="Título destacado" value={ci.headingHighlight} onChange={(v) => patch("cities", "headingHighlight", v)} />
         </div>
-        <p className="mt-2 text-sm font-medium text-ink-secondary">Grupos por cidade</p>
-        <ArrayEditor items={ci.groups} onChange={(v) => patch("cities", "groups", v)} empty={{ city: "", items: [] }} render={(item, upd) => (
-          <div className="space-y-2">
-            <Mini label="Cidade" value={item.city} onChange={(v) => upd({ ...item, city: v })} />
-            <TextArea label="Bairros (um por linha)" value={(item.items || []).join("\n")} onChange={(v) => upd({ ...item, items: linesToArray(v) })} />
-          </div>
-        )} />
+        <p className="rounded-lg bg-black/[0.03] p-3 text-xs text-ink-muted">
+          A lista de <strong>cidades e bairros</strong> é montada automaticamente a partir dos imóveis cadastrados (aba Imóveis) —
+          cada bairro só aparece se houver pelo menos um imóvel nele. Aqui você edita apenas o título da seção.
+        </p>
       </Card>
     </>
   );

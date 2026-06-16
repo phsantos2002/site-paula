@@ -18,8 +18,23 @@ function CityColumn({ city, items }) {
   );
 }
 
-export default function CitiesSection({ cities = {} }) {
-  const groups = cities.groups || [];
+export default function CitiesSection({ cities = {}, properties = [] }) {
+  // Monta os grupos a partir dos imóveis cadastrados: cidade -> bairros únicos
+  const map = new Map();
+  for (const p of properties) {
+    if (!p.city) continue;
+    if (!map.has(p.city)) map.set(p.city, new Set());
+    if (p.neighborhood) map.get(p.city).add(p.neighborhood);
+  }
+  const groups = [...map.entries()]
+    .map(([city, set]) => ({
+      city,
+      items: [...set].sort((a, b) => a.localeCompare(b, "pt")),
+    }))
+    .sort((a, b) => a.city.localeCompare(b.city, "pt"));
+
+  if (!groups.length) return null;
+
   return (
     <section className="flex flex-col gap-10 bg-white px-6 py-14 pb-20 md:px-[60px]">
       <h2 className="font-poppins text-2xl font-medium uppercase text-ink-secondary">
@@ -27,8 +42,8 @@ export default function CitiesSection({ cities = {} }) {
       </h2>
 
       <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-        {groups.map((c) => (
-          <CityColumn key={c.city} city={c.city} items={c.items || []} />
+        {groups.map((g) => (
+          <CityColumn key={g.city} city={g.city} items={g.items} />
         ))}
       </div>
     </section>
