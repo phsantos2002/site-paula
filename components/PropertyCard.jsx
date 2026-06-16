@@ -95,13 +95,13 @@ export default function PropertyCard({ p, variant = "list" }) {
 
   // variant "list" — card horizontal
   return (
-    <a href={href} className="flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white transition-shadow hover:shadow-lg md:flex-row">
+    <a href={href} className="flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white transition-shadow hover:shadow-lg md:h-[260px] md:flex-row">
       <div className="relative md:w-[360px] md:shrink-0">
         <Badges operation={p.operation} />
-        <Gallery images={p.images} alt={p.title} heightClass="h-56 md:h-full md:min-h-[220px]" />
+        <Gallery images={p.images} alt={p.title} heightClass="h-56 md:h-full" />
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-5">
-        <h3 className="font-poppins text-base font-semibold leading-snug text-ink">{p.title}</h3>
+      <div className="flex flex-1 flex-col gap-1.5 overflow-hidden p-5">
+        <h3 className="line-clamp-2 font-poppins text-base font-semibold leading-snug text-ink">{p.title}</h3>
         <p className="text-sm text-ink-muted">{p.type}</p>
         <PriceBlock p={p} />
         <p className="text-sm font-semibold text-ink-secondary">{p.neighborhood}</p>
