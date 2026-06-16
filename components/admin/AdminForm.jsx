@@ -16,12 +16,45 @@ const TABS = [
 const OPERATIONS = ["Venda", "Aluguel", "Financiamento"];
 const TYPES = ["Apartamento", "Casa", "Terreno", "Comercial"];
 
+// Reduz/recomprime imagens que o navegador consegue decodificar (jpeg/png/webp),
+// para caber no limite de upload e carregar rápido no site.
+async function compressImage(file) {
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type || "")) return file;
+  if (file.size < 1_200_000) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxDim = 1920;
+    let { width, height } = bitmap;
+    if (width > maxDim || height > maxDim) {
+      const r = Math.min(maxDim / width, maxDim / height);
+      width = Math.round(width * r);
+      height = Math.round(height * r);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, width, height);
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.82));
+    if (blob && blob.size < file.size) {
+      const base = (file.name || "foto").replace(/\.\w+$/, "");
+      return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+    }
+  } catch {
+    /* formato não decodificável (HEIC/DNG/RAW): envia original */
+  }
+  return file;
+}
+
 async function uploadImage(file) {
+  const prepared = await compressImage(file);
   const fd = new FormData();
-  fd.append("file", file);
+  fd.append("file", prepared);
   const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+  if (res.status === 413) {
+    throw new Error("Imagem muito grande (máx ~4,5 MB). Use JPG/PNG ou reduza o tamanho.");
+  }
   const j = await res.json().catch(() => ({}));
-  if (!j.ok) throw new Error(j.error || "Falha no upload");
+  if (!j.ok) throw new Error(j.error || `Falha no upload (HTTP ${res.status})`);
   return j.path;
 }
 
@@ -528,13 +561,22 @@ function RodapeTab({ data, patch }) {
 
 function MultiImageField({ images, onChange, coverImage, showCover, onSetCover }) {
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
   const [url, setUrl] = useState("");
   async function handleFiles(e) {
     const files = [...(e.target.files || [])];
     if (!files.length) return;
     setBusy(true);
-    try { const paths = []; for (const f of files) paths.push(await uploadImage(f)); onChange([...images, ...paths]); } catch {}
-    setBusy(false); e.target.value = "";
+    setErr("");
+    try {
+      const paths = [];
+      for (const f of files) paths.push(await uploadImage(f));
+      onChange([...images, ...paths]);
+    } catch (e2) {
+      setErr(e2?.message || "Falha ao enviar imagem.");
+    }
+    setBusy(false);
+    e.target.value = "";
   }
   return (
     <div>
@@ -563,6 +605,7 @@ function MultiImageField({ images, onChange, coverImage, showCover, onSetCover }
         <input type="file" accept="image/*,.dng,.heic,.heif,.tif,.tiff,.webp,.avif,.cr2,.cr3,.nef,.arw,.raf,.rw2,.orf,.raw" multiple onChange={handleFiles} className="text-sm text-ink-secondary file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:text-white" />
         {busy && <span className="text-xs text-ink-muted">Enviando...</span>}
       </div>
+      {err && <p className="mt-2 text-xs text-red-600">{err}</p>}
       <div className="mt-2 flex gap-2">
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="ou cole uma URL de imagem" className="h-9 flex-1 rounded-lg border border-inputborder px-2 text-xs outline-none focus:border-primary" />
         <button onClick={() => { if (url.trim()) { onChange([...images, url.trim()]); setUrl(""); } }} className="rounded-lg bg-black/5 px-3 text-sm hover:bg-black/10">Adicionar</button>
@@ -655,7 +698,7 @@ function ImageField({ label, value, onChange, compact }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setBusy(true); setErr("");
-    try { onChange(await uploadImage(file)); } catch { setErr("Falha ao enviar imagem."); }
+    try { onChange(await uploadImage(file)); } catch (e2) { setErr(e2?.message || "Falha ao enviar imagem."); }
     setBusy(false);
   }
   return (

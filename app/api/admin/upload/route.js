@@ -52,6 +52,6 @@ export async function POST(req) {
     fs.writeFileSync(path.join(dir, name), bytes);
     return NextResponse.json({ ok: true, path: `/uploads/${name}` });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: "Falha no upload." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: e?.message || "Falha no upload." }, { status: 500 });
   }
 }
