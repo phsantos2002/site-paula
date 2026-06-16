@@ -560,7 +560,7 @@ function MultiImageField({ images, onChange, coverImage, showCover, onSetCover }
         })}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <input type="file" accept="image/*" multiple onChange={handleFiles} className="text-sm text-ink-secondary file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:text-white" />
+        <input type="file" accept="image/*,.dng,.heic,.heif,.tif,.tiff,.webp,.avif,.cr2,.cr3,.nef,.arw,.raf,.rw2,.orf,.raw" multiple onChange={handleFiles} className="text-sm text-ink-secondary file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:text-white" />
         {busy && <span className="text-xs text-ink-muted">Enviando...</span>}
       </div>
       <div className="mt-2 flex gap-2">
@@ -667,7 +667,7 @@ function ImageField({ label, value, onChange, compact }) {
           <img src={value} alt="preview" className={`rounded-lg object-cover ${compact ? "h-12 w-16" : "h-20 w-28"}`} />
         ) : (<div className={`rounded-lg bg-black/5 ${compact ? "h-12 w-16" : "h-20 w-28"}`} />)}
         <div className="flex-1">
-          <input type="file" accept="image/*" onChange={handle} className="block w-full text-sm text-ink-secondary file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:text-white" />
+          <input type="file" accept="image/*,.dng,.heic,.heif,.tif,.tiff,.webp,.avif,.cr2,.cr3,.nef,.arw,.raf,.rw2,.orf,.raw" onChange={handle} className="block w-full text-sm text-ink-secondary file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:text-white" />
           <input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="ou cole uma URL de imagem" className="mt-2 h-9 w-full rounded-lg border border-inputborder px-2 text-xs outline-none focus:border-primary" />
           {busy && <p className="mt-1 text-xs text-ink-muted">Enviando...</p>}
           {err && <p className="mt-1 text-xs text-red-600">{err}</p>}

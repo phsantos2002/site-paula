@@ -6,6 +6,21 @@ import path from "path";
 
 export const runtime = "nodejs";
 
+const MIME_BY_EXT = {
+  dng: "image/x-adobe-dng", heic: "image/heic", heif: "image/heif",
+  tif: "image/tiff", tiff: "image/tiff", webp: "image/webp", avif: "image/avif",
+  cr2: "image/x-canon-cr2", cr3: "image/x-canon-cr3", nef: "image/x-nikon-nef",
+  arw: "image/x-sony-arw", raf: "image/x-fuji-raf", rw2: "image/x-panasonic-rw2",
+  orf: "image/x-olympus-orf", raw: "image/x-dcraw",
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+};
+
+function guessType(file) {
+  if (file.type) return file.type;
+  const ext = (file.name || "").split(".").pop()?.toLowerCase();
+  return MIME_BY_EXT[ext] || "application/octet-stream";
+}
+
 export async function POST(req) {
   if (!isAuthenticated()) {
     return NextResponse.json({ ok: false, error: "Não autenticado." }, { status: 401 });
@@ -23,7 +38,7 @@ export async function POST(req) {
     const sb = getSupabase();
     if (sb) {
       const { error } = await sb.storage.from(UPLOAD_BUCKET).upload(name, bytes, {
-        contentType: file.type || "image/jpeg",
+        contentType: guessType(file),
         upsert: false,
       });
       if (error) throw error;
