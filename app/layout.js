@@ -8,6 +8,12 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // não trava o zoom do usuário (acessibilidade); só evitamos o zoom de foco via CSS
+};
+
 export const metadata = {
   title: "Paula Regina — Corretora de Imóveis | Compra, Venda e Locação",
   description:

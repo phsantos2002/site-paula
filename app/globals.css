@@ -62,6 +62,16 @@ a {
   color: inherit;
 }
 
+/* Evita o zoom automático do iOS ao focar campos:
+   o Safari mobile dá zoom quando o campo tem fonte < 16px. */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Carrossel da capa: card desliza da direita p/ a esquerda; fundo faz fade */
 @keyframes heroSlideIn {
   from { opacity: 0; transform: translateX(48px); }

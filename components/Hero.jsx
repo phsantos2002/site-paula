@@ -56,11 +56,11 @@ export default function Hero({ hero = {}, coverProperties = [] }) {
   const go = (d) => setI((v) => (v + d + slides.length) % slides.length);
 
   return (
-    <section className="relative flex min-h-[634px] w-full items-center overflow-hidden bg-ink">
+    <section className="relative flex min-h-[560px] w-full items-center overflow-hidden bg-ink md:min-h-[634px]">
       <img key={bg} src={bg} alt="Banner" className="hero-fade absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-black/50" aria-hidden />
 
-      <div className="relative z-10 w-full px-6 pt-[120px] pb-16 md:px-[60px]">
+      <div className="relative z-10 w-full px-6 pt-[110px] pb-24 md:px-[60px] md:pb-16">
         <div className="grid items-center gap-10 lg:grid-cols-[1.3fr_auto]">
           <div className="text-center lg:text-left">
             <h1 className="mx-auto max-w-2xl font-poppins text-[28px] font-medium leading-[1.2] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] md:text-hero lg:mx-0">
