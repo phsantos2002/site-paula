@@ -331,10 +331,25 @@ function MarcaTab({ data, patch }) {
         <Field label="Subtítulo / profissão" value={b.tagline} onChange={(v) => patch("brand", "tagline", v)} />
       </Card>
       <Card title="Cores do tema">
-        <ColorField label="Cor primária (botões / âmbar)" value={c.primary} onChange={(v) => patch("colors", "primary", v)} />
-        <ColorField label="Primária — hover" value={c.primaryHover} onChange={(v) => patch("colors", "primaryHover", v)} />
-        <ColorField label="Primária escura (dourado)" value={c.primaryDark} onChange={(v) => patch("colors", "primaryDark", v)} />
-        <ColorField label="Cor do badge" value={c.primaryBadge} onChange={(v) => patch("colors", "primaryBadge", v)} />
+        <p className="-mt-2 text-xs text-ink-muted">Estas cores valem para o site inteiro. Veja onde cada uma aparece:</p>
+        <ColorField
+          label="Cor primária (âmbar)"
+          hint="Botões de ação (Buscar, Ver imóvel, Ver todos os imóveis, Falar com a Paula), barra do rodapé e detalhes em âmbar."
+          value={c.primary}
+          onChange={(v) => patch("colors", "primary", v)}
+        />
+        <ColorField
+          label="Primária — ao passar o mouse"
+          hint="Cor que os botões âmbar assumem quando o cursor passa por cima (efeito hover)."
+          value={c.primaryHover}
+          onChange={(v) => patch("colors", "primaryHover", v)}
+        />
+        <ColorField
+          label="Dourado (textos em destaque)"
+          hint="Números da faixa de credenciais, preços dos imóveis, partes destacadas dos títulos e o selo “Imóvel em destaque”."
+          value={c.primaryDark}
+          onChange={(v) => patch("colors", "primaryDark", v)}
+        />
       </Card>
     </>
   );
@@ -584,15 +599,18 @@ function TextArea({ label, value, onChange }) {
   );
 }
 
-function ColorField({ label, value, onChange }) {
+function ColorField({ label, hint, value, onChange }) {
   return (
-    <label className="flex items-center justify-between gap-4">
-      <span className="text-sm font-medium text-ink-secondary">{label}</span>
-      <span className="flex items-center gap-2">
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex-1">
+        <span className="block text-sm font-medium text-ink-secondary">{label}</span>
+        {hint && <span className="mt-0.5 block text-xs text-ink-muted">{hint}</span>}
+      </div>
+      <span className="flex shrink-0 items-center gap-2 pt-0.5">
         <input type="color" value={value || "#000000"} onChange={(e) => onChange(e.target.value)} className="h-9 w-12 cursor-pointer rounded border border-inputborder" />
         <input value={value || ""} onChange={(e) => onChange(e.target.value)} className="h-9 w-24 rounded-lg border border-inputborder px-2 text-sm uppercase outline-none focus:border-primary" />
       </span>
-    </label>
+    </div>
   );
 }
 
