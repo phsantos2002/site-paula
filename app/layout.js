@@ -1,0 +1,29 @@
+import { Poppins } from "next/font/google";
+import "./globals.css";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-poppins",
+});
+
+export const metadata = {
+  title: "Paula Regina — Corretora de Imóveis | Compra, Venda e Locação",
+  description:
+    "Encontre o imóvel que você quer com a experiência que você sempre quis. Atendimento personalizado em São José dos Campos e região.",
+  openGraph: {
+    title: "Paula Regina — Corretora de Imóveis",
+    description:
+      "O imóvel que você quer, com a experiência que você sempre quis.",
+    type: "website",
+  },
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="pt-BR" className={poppins.variable}>
+      <body>{children}</body>
+    </html>
+  );
+}

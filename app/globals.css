@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   TOKENS DE DESIGN — Paula Regina (base: design system Grupo Kaza)
+   ============================================================ */
+:root {
+  /* === CORES PRIMÁRIAS (canais RGB — sobrescritas pelo /admin via <ThemeStyle/>) === */
+  --primary: 246 188 65;
+  --primary-hover: 241 205 128;
+  --primary-dark: 239 184 16;
+  --primary-badge: 234 184 61;
+  --secondary: #4ecb5b;
+
+  --background: #ffffff;
+  --background-alt: #f5f5f5;
+  --background-hero: #000000;
+
+  --text: #212529;
+  --text-secondary: #323232;
+  --text-muted: #7a7a7a;
+  --text-on-primary: #020200;
+  --text-on-dark: #ffffff;
+
+  --border: #bdbdbd;
+  --border-subtle: rgba(0, 0, 0, 0.1);
+  --separator: #b2b2b2;
+
+  /* === OVERLAYS === */
+  --overlay-header: linear-gradient(rgb(0, 0, 0) 0%, rgba(0, 0, 0, 0.5) 40%, transparent 100%);
+  --overlay-header-stuck: rgba(0, 0, 0, 0.5);
+  --overlay-map: rgba(20, 20, 20, 0.5);
+  --overlay-card: rgba(0, 0, 0, 0.45);
+
+  /* === ESPAÇAMENTO === */
+  --padding-section-x: 60px;
+  --padding-section-y: 40px;
+  --padding-explore-x: 220px;
+  --gap-header-cols: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-poppins), system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  color: var(--text);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+/* Carrossel da capa: card desliza da direita p/ a esquerda; fundo faz fade */
+@keyframes heroSlideIn {
+  from { opacity: 0; transform: translateX(48px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.hero-slide { animation: heroSlideIn 0.6s ease; }
+
+@keyframes heroFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.hero-fade { animation: heroFade 0.8s ease; }
+
+/* Carrossel sem barra de scroll visível */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

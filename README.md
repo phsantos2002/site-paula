@@ -1,0 +1,79 @@
+# Paula Regina — Corretora de Imóveis
+
+Landing page construída em **Next.js 14 (App Router) + Tailwind CSS**, reproduzindo o design system da landing page do Grupo Kaza, adaptado para a corretora **Paula Regina**.
+
+## Stack
+- Next.js 14 (App Router, JavaScript)
+- Tailwind CSS 3
+- Fonte Poppins via `next/font/google`
+
+## Como rodar
+
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
+
+Build de produção:
+
+```bash
+npm run build
+npm start
+```
+
+## Estrutura
+
+```
+app/
+  layout.js          # fonte Poppins + metadata
+  page.js            # composição das seções
+  globals.css        # tokens de design (CSS vars) + Tailwind
+components/
+  Header.jsx         # navbar sticky com gradiente / estado "stuck"
+  Hero.jsx           # banner full-viewport + H1
+  SearchBar.jsx      # barra de busca pill
+  CorpRibbon.jsx     # faixa âmbar de credenciais
+  ServicesCarousel.jsx
+  ExploreSection.jsx
+  MapSection.jsx
+  CitiesSection.jsx  # links por bairro
+  RegisterForm.jsx   # formulário de cadastro (com estado)
+  WhatsAppFloat.jsx
+  Footer.jsx
+tailwind.config.js   # paleta âmbar, raios pill, sombras
+```
+
+## Painel de administração (`/admin`)
+
+O conteúdo do site é editável por uma pessoa não-técnica, sem mexer no código.
+
+- Acesse **http://localhost:3000/admin**
+- Senha definida em `.env.local` (`ADMIN_PASSWORD`). Padrão: `paula2026` — **troque antes de publicar**.
+- Abas disponíveis: **Capa/Hero**, **Marca & Cores**, **Contato & Redes**, **Textos & Seções** (faixa, sobre, serviços, cidades/bairros).
+- Upload de imagens (capa, foto, cards) — salvas em `public/uploads/`.
+- Clique em **Salvar alterações** e atualize o site.
+
+Como funciona:
+- Todo o conteúdo vive em `data/site-content.json` (criado no primeiro salvamento; até lá usa os padrões de `lib/content.js`).
+- As cores são aplicadas em tempo real via CSS variables (`components/ThemeStyle.jsx`) — não precisa rebuild.
+- Rotas de API: `app/api/admin/{login,logout,save,upload}`.
+
+### Armazenamento (arquivos ou Supabase)
+O site detecta automaticamente:
+- **Sem variáveis do Supabase** (PC local): salva em `data/*.json` e `public/uploads/`.
+- **Com Supabase configurado** (produção/Vercel): salva no banco (tabela `singletons`) e imagens no Storage.
+
+Para publicar grátis na **Vercel + Supabase**, siga o passo a passo em [DEPLOY.md](DEPLOY.md).
+
+### Aba Contatos
+Os envios do formulário de cadastro ficam em **/admin → Contatos** (marcar como lido, excluir, link de WhatsApp).
+
+## Design tokens
+A paleta âmbar (`#F6BC41`), tipografia e espaçamentos estão centralizados em
+`tailwind.config.js` e `app/globals.css` (`:root`).
+
+## Personalização rápida
+- **Telefone/WhatsApp**: `components/WhatsAppFloat.jsx` e `components/Footer.jsx`
+- **CRECI / contato**: `components/Footer.jsx`
+- **Imagens**: hoje apontam para o Unsplash; troque pelas fotos reais em cada componente.
+- **Bairros/cidades**: `components/CitiesSection.jsx`
