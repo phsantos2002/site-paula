@@ -363,7 +363,7 @@ function MenuTab({ data, patch, setSection }) {
     <>
       <Card title="Menu (links do topo)">
         <LinkEditor items={data.nav} onChange={(v) => setSection("nav", v)} />
-        <Field label='Texto do botão "Fale Conosco"' value={data.header.faleConosco} onChange={(v) => patch("header", "faleConosco", v)} />
+        <Field label="Texto do botão de contato no topo do site" value={data.header.faleConosco} onChange={(v) => patch("header", "faleConosco", v)} />
       </Card>
       <Card title="Contato & Redes">
         <Field label="WhatsApp (só números, com DDI 55)" value={c.whatsapp} onChange={(v) => patch("contact", "whatsapp", v)} placeholder="5512999999999" />
