@@ -305,8 +305,8 @@ function CapaTab({ data, patch }) {
       <Field label="Título (1ª linha)" value={h.titleLine1} onChange={(v) => patch("hero", "titleLine1", v)} />
       <Field label="Título (2ª linha, em negrito)" value={h.titleLine2} onChange={(v) => patch("hero", "titleLine2", v)} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Selo do card (ex: Imóvel em destaque)" value={h.cardBadge} onChange={(v) => patch("hero", "cardBadge", v)} />
-        <Field label="Botão do card (ex: Ver imóvel)" value={h.cardButton} onChange={(v) => patch("hero", "cardButton", v)} />
+        <Field label="Selo do card da capa (texto pequeno acima do título)" value={h.cardBadge} onChange={(v) => patch("hero", "cardBadge", v)} />
+        <Field label="Texto do botão do card da capa" value={h.cardButton} onChange={(v) => patch("hero", "cardButton", v)} />
       </div>
       <NumberField label="Intervalo do carrossel da capa (segundos)" value={h.coverInterval} onChange={(v) => patch("hero", "coverInterval", v)} />
       <p className="-mt-2 text-xs text-ink-muted">Tempo entre uma capa e outra quando há vários imóveis marcados como capa (mínimo 2s).</p>
