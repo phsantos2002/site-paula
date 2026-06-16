@@ -294,29 +294,36 @@ function ImoveisTab({ properties, setProperties }) {
                 </span>
               </span>
               <span className="flex items-center gap-2">
+                {p.cover && <span className="rounded bg-ink px-2 py-0.5 text-[10px] font-semibold text-white">CAPA</span>}
                 {p.featured && <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary-dark">DESTAQUE</span>}
                 <span className="text-ink-muted">{openIdx === i ? "▲" : "▼"}</span>
               </span>
             </button>
             {openIdx === i && (
               <div className="space-y-4 border-t border-black/10 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-black/[0.03] px-3 py-2">
-                  <span className="text-sm font-semibold text-ink-secondary">Código do imóvel: <span className="text-primary-dark">{p.code}</span></span>
-                  <div className="flex flex-wrap gap-4">
-                    <label className="flex items-center gap-2 text-sm text-ink-secondary">
-                      <input type="checkbox" checked={!!p.featured} onChange={(e) => update(i, { ...p, featured: e.target.checked })} className="h-4 w-4 accent-primary" />
-                      Mostrar nos destaques
+                <div className="rounded-lg bg-black/[0.03] p-3">
+                  <span className="block text-sm font-semibold text-ink-secondary">Código do imóvel: <span className="text-primary-dark">{p.code}</span></span>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
+                      <input type="checkbox" checked={!!p.cover} onChange={(e) => update(i, { ...p, cover: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
+                      <span>
+                        <strong>🏠 Capa da home (topo)</strong>
+                        <span className="block text-xs text-ink-muted">Aparece no carrossel grande do topo. Marque em 2+ imóveis para girar.</span>
+                      </span>
                     </label>
-                    <label className="flex items-center gap-2 text-sm font-medium text-ink-secondary">
-                      <input type="checkbox" checked={!!p.cover} onChange={(e) => update(i, { ...p, cover: e.target.checked })} className="h-4 w-4 accent-primary" />
-                      🏠 Capa da home
+                    <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
+                      <input type="checkbox" checked={!!p.featured} onChange={(e) => update(i, { ...p, featured: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
+                      <span>
+                        <strong>⭐ Destaque</strong>
+                        <span className="block text-xs text-ink-muted">Aparece na seção “Destaques em imóveis”, mais abaixo na home.</span>
+                      </span>
                     </label>
                   </div>
                 </div>
                 {p.cover && (
                   <p className="-mt-2 text-xs text-primary-dark">
-                    Aparece na capa. Escolha abaixo a <strong>foto de capa</strong> (clique em “Definir capa” numa foto).
-                    Pode marcar vários imóveis como capa — eles viram um carrossel (o tempo de troca é definido na aba “Capa”).
+                    Este imóvel está na <strong>capa</strong>. Escolha abaixo a <strong>foto de capa</strong> (botão “Definir capa” numa foto).
+                    O tempo de troca do carrossel é definido na aba “Capa”.
                   </p>
                 )}
                 <Field label="Título" value={p.title} onChange={(v) => update(i, { ...p, title: v })} placeholder="Ex: Casa à venda em SJC no bairro Urbanova - 4 quartos" />
