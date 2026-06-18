@@ -275,15 +275,35 @@ function ImoveisTab({ properties, setProperties }) {
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
   function add() { const code = nextCode(properties); setProperties([emptyProperty(code), ...properties]); setOpenIdx(0); }
+  function move(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= properties.length) return;
+    const next = properties.slice();
+    [next[i], next[j]] = [next[j], next[i]];
+    setProperties(next);
+    if (openIdx === i) setOpenIdx(j);
+    else if (openIdx === j) setOpenIdx(i);
+  }
 
   return (
     <Card title={`Imóveis cadastrados (${properties.length})`}>
-      <button onClick={add} className="mb-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">+ Cadastrar novo imóvel</button>
+      <button onClick={add} className="mb-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">+ Cadastrar novo imóvel</button>
+      <p className="mb-4 text-xs text-ink-muted">Use as setas ↑ ↓ para reordenar. Essa ordem vale na <strong>capa</strong> e nos <strong>destaques</strong> da home.</p>
       <div className="space-y-3">
         {properties.map((p, i) => (
           <div key={p.id || i} className="rounded-lg border border-black/10 bg-white">
-            <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
-              <span className="flex items-center gap-3">
+            <div className="flex w-full items-center gap-3 px-4 py-3">
+              {/* reordenar */}
+              <div className="flex flex-col">
+                <button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Mover para cima" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg>
+                </button>
+                <button onClick={() => move(i, 1)} disabled={i === properties.length - 1} aria-label="Mover para baixo" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+              </div>
+
+              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex flex-1 items-center gap-3 text-left">
                 {p.images?.[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={p.images[0]} alt="" className="h-10 w-14 rounded object-cover" />
@@ -292,13 +312,14 @@ function ImoveisTab({ properties, setProperties }) {
                   <span className="block text-sm font-medium text-ink">{p.title || "(sem título)"}</span>
                   <span className="block text-xs text-ink-muted">Cód: {p.code} · {p.type} · {(p.operation || []).join(", ")}</span>
                 </span>
-              </span>
-              <span className="flex items-center gap-2">
+              </button>
+
+              <div className="flex items-center gap-2">
                 {p.cover && <span className="rounded bg-ink px-2 py-0.5 text-[10px] font-semibold text-white">CAPA</span>}
                 {p.featured && <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary-dark">DESTAQUE</span>}
-                <span className="text-ink-muted">{openIdx === i ? "▲" : "▼"}</span>
-              </span>
-            </button>
+                <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-label="Abrir" className="text-ink-muted">{openIdx === i ? "▲" : "▼"}</button>
+              </div>
+            </div>
             {openIdx === i && (
               <div className="space-y-4 border-t border-black/10 p-4">
                 <div className="rounded-lg bg-black/[0.03] p-3">
