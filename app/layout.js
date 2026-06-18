@@ -15,7 +15,7 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: "Paula Regina | Corretora de Imóveis em São José dos Campos",
+  title: "Paula Regina | Corretora de Imóveis",
   description:
     "Encontre o imóvel que você quer com a experiência que você sempre quis. Atendimento personalizado em São José dos Campos e região.",
   openGraph: {
