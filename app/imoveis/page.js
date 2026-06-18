@@ -7,7 +7,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import PropertySearch from "@/components/PropertySearch";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Imóveis — Paula Regina" };
+export const metadata = { title: "Imóveis | Paula Regina" };
 
 export default async function ImoveisPage({ searchParams }) {
   const c = await getContent();

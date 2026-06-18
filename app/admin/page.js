@@ -7,7 +7,7 @@ import AdminForm from "@/components/admin/AdminForm";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Administração — Paula Regina",
+  title: "Administração | Paula Regina",
   robots: { index: false, follow: false },
 };
 

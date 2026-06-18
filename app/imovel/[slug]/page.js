@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const p = await getProperty(params.slug);
-  return { title: p ? `${p.title} — Paula Regina` : "Imóvel — Paula Regina" };
+  return { title: p ? `${p.title} | Paula Regina` : "Imóvel | Paula Regina" };
 }
 
 export default async function PropertyPage({ params }) {
