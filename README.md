@@ -68,6 +68,21 @@ Para publicar grátis na **Vercel + Supabase**, siga o passo a passo em [DEPLOY.
 ### Aba Contatos
 Os envios do formulário de cadastro ficam em **/admin → Contatos** (marcar como lido, excluir, link de WhatsApp).
 
+### Captação e ciclo de vida do imóvel (aba Imóveis)
+Um imóvel existe na base **desde a captação** e só aparece no site quando é **publicado**.
+
+- **Situação** (badge no site): `Disponível` · `Exclusividade` · `Vendido` · `Alugado`.
+  Deixou de ser texto no título — vira badge automático (pílula de exclusividade; faixa diagonal para vendido/alugado).
+- **Etapa** (funil interno, não aparece no site): `1 Captado → 2 Fotos tratadas → 3 Cadastrado → 4 Publicado`.
+- **Publicado** (interruptor): desmarcado = **rascunho**, existe só no painel; marcado = aparece na home e na listagem.
+  Todo cadastro novo **nasce como rascunho**. O botão **Publicar** (na lista) já avança a etapa para "Publicado".
+- **Ficha de captação**: cada imóvel tem **Proprietário** (nome, contato, exclusividade) e **Captação** (data, capturado por, observações), além de condomínio, andar e mobiliado.
+- **Filtro** no topo da lista: `Todos · Rascunhos · Publicados · por etapa`.
+
+> **Migração única (rodar uma vez):** imóveis antigos trazem `VENDIDO`/`EXCLUSIVIDADE` dentro do título.
+> Clique em **"Migrar títulos → Situação"** (aba Imóveis) e depois **Salvar**: o texto sai do título e vira o campo *Situação*.
+> É idempotente (pode clicar de novo sem risco) e **preserva as URLs** dos imóveis.
+
 ## Design tokens
 A paleta âmbar (`#F6BC41`), tipografia e espaçamentos estão centralizados em
 `tailwind.config.js` e `app/globals.css` (`:root`).
