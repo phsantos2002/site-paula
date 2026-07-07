@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { formatBRL } from "@/lib/format";
 import PropertySpecs from "./PropertySpecs";
+import StatusBadge from "./StatusBadge";
 
-function Badges({ operation }) {
+function Badges({ operation, status }) {
   return (
-    <div className="absolute left-3 top-3 z-10 flex gap-1.5">
+    <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
+      <StatusBadge status={status} />
       {(operation || []).map((op) => (
         <span
           key={op}
@@ -80,7 +82,7 @@ export default function PropertyCard({ p, variant = "list" }) {
     return (
       <a href={href} className="block min-w-[280px] max-w-[300px] snap-start overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm transition-shadow hover:shadow-lg">
         <div className="relative">
-          <Badges operation={p.operation} />
+          <Badges operation={p.operation} status={p.status} />
           <Gallery images={p.images} alt={p.title} heightClass="h-44" />
         </div>
         <div className="flex flex-col gap-1 p-4">

@@ -1,5 +1,5 @@
 import { getContent } from "@/lib/content";
-import { getProperties, PROPERTY_TYPES } from "@/lib/properties";
+import { getPublishedProperties, PROPERTY_TYPES } from "@/lib/properties";
 import ThemeStyle from "@/components/ThemeStyle";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -7,11 +7,16 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import PropertySearch from "@/components/PropertySearch";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Imóveis | Paula Regina" };
+export const metadata = {
+  title: "Imóveis | Paula Regina",
+  description:
+    "Casas, apartamentos, terrenos e imóveis comerciais à venda e para alugar em São José dos Campos, Jacareí e região. Busque por bairro, tipo e valor.",
+  alternates: { canonical: "/imoveis" },
+};
 
 export default async function ImoveisPage({ searchParams }) {
   const c = await getContent();
-  const properties = await getProperties();
+  const properties = await getPublishedProperties();
   const cities = [...new Set(properties.map((p) => p.city).filter(Boolean))];
 
   return (

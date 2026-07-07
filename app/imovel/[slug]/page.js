@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getContent } from "@/lib/content";
-import { getProperty } from "@/lib/properties";
+import { getPublishedProperty } from "@/lib/properties";
 import { formatBRL } from "@/lib/format";
 import ThemeStyle from "@/components/ThemeStyle";
 import Header from "@/components/Header";
@@ -8,17 +8,59 @@ import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import PropertyGallery from "@/components/PropertyGallery";
 import PropertySpecs from "@/components/PropertySpecs";
+import StatusBadge from "@/components/StatusBadge";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
-  const p = await getProperty(params.slug);
-  return { title: p ? `${p.title} | Paula Regina` : "Imóvel | Paula Regina" };
+  const p = await getPublishedProperty(params.slug);
+  if (!p) return { title: "Imóvel | Paula Regina" };
+
+  const bits = [];
+  if (p.area > 0) bits.push(`${p.area} m²`);
+  if (p.bedrooms > 0) bits.push(`${p.bedrooms} dorm.`);
+  if (p.suites > 0) bits.push(`${p.suites} suíte${p.suites > 1 ? "s" : ""}`);
+  if (p.parking > 0) bits.push(`${p.parking} vaga${p.parking > 1 ? "s" : ""}`);
+  const priceTxt =
+    p.price > 0 ? formatBRL(p.price) : p.rentPrice > 0 ? `${formatBRL(p.rentPrice)}/mês` : "";
+
+  const description = [
+    `${p.type} em ${p.neighborhood}, ${p.city}/${p.state}.`,
+    bits.join(" · "),
+    priceTxt && `— ${priceTxt}`,
+    `Cód. ${p.code}. Fale com a Paula Regina.`,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const image = p.coverImage || p.images?.[0];
+  const url = `/imovel/${p.slug}`;
+
+  return {
+    title: `${p.title} | Paula Regina`,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: p.title,
+      description,
+      url,
+      type: "website",
+      images: image ? [{ url: image, alt: p.title }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: p.title,
+      description,
+      images: image ? [image] : undefined,
+    },
+  };
 }
 
 export default async function PropertyPage({ params }) {
   const c = await getContent();
-  const p = await getProperty(params.slug);
+  const p = await getPublishedProperty(params.slug);
   if (!p) notFound();
 
   const wa = `https://wa.me/${c.contact.whatsapp || ""}?text=${encodeURIComponent(
@@ -47,6 +89,11 @@ export default async function PropertyPage({ params }) {
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
           {/* Coluna principal */}
           <div>
+            {p.status && p.status !== "disponivel" && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                <StatusBadge status={p.status} />
+              </div>
+            )}
             <h1 className="font-poppins text-2xl font-medium leading-snug text-ink-secondary md:text-3xl">
               {p.title}
             </h1>

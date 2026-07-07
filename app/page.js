@@ -1,5 +1,5 @@
 import { getContent } from "@/lib/content";
-import { getProperties } from "@/lib/properties";
+import { getPublishedProperties } from "@/lib/properties";
 import ThemeStyle from "@/components/ThemeStyle";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const c = await getContent();
-  const all = await getProperties();
+  const all = await getPublishedProperties();
   const featured = all.filter((p) => p.featured).slice(0, 8);
   const coverProperties = all.filter((p) => p.cover);
 
