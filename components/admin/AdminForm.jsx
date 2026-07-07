@@ -16,6 +16,20 @@ const TABS = [
 const OPERATIONS = ["Venda", "Aluguel", "Financiamento"];
 const TYPES = ["Apartamento", "Casa", "Terreno", "Comercial"];
 
+const STATUS_OPTIONS = [
+  { value: "disponivel", label: "Disponível" },
+  { value: "exclusividade", label: "Exclusividade" },
+  { value: "vendido", label: "Vendido" },
+  { value: "alugado", label: "Alugado" },
+];
+const ETAPA_OPTIONS = [
+  { value: "captado", label: "1 · Captado" },
+  { value: "fotos_tratadas", label: "2 · Fotos tratadas" },
+  { value: "cadastrado", label: "3 · Cadastrado" },
+  { value: "publicado", label: "4 · Publicado" },
+];
+const ETAPA_LABEL = Object.fromEntries(ETAPA_OPTIONS.map((o) => [o.value, o.label]));
+
 // Reduz/recomprime imagens que o navegador consegue decodificar (jpeg/png/webp),
 // para caber no limite de upload e carregar rápido no site.
 async function compressImage(file) {
@@ -267,12 +281,60 @@ function nextCode(properties) {
 }
 
 function emptyProperty(code) {
-  return { id: code, code, title: "", type: "Apartamento", operation: ["Venda"], city: "São José dos Campos", neighborhood: "", state: "SP", price: 0, rentPrice: 0, condo: 0, iptu: 0, area: 0, bedrooms: 0, suites: 0, bathrooms: 0, parking: 0, description: "", features: [], condoFeatures: [], images: [], featured: false };
+  return {
+    id: code, code, title: "", type: "Apartamento", operation: ["Venda"],
+    city: "São José dos Campos", neighborhood: "", state: "SP",
+    price: 0, rentPrice: 0, condo: 0, iptu: 0,
+    area: 0, bedrooms: 0, suites: 0, bathrooms: 0, parking: 0,
+    description: "", features: [], condoFeatures: [], images: [], featured: false,
+    // Nasce como rascunho invisível no site (captação):
+    status: "disponivel", etapa: "captado", publicado: false,
+    condominio: "", andar: 0, mobiliado: false,
+    proprietario: { nome: "", contato: "", exclusividade: false },
+    captacao: { data: "", capturadoPor: "", observacoes: "" },
+  };
 }
+
+const FILTERS = [
+  { value: "all", label: "Todos" },
+  { value: "rascunhos", label: "Rascunhos" },
+  { value: "publicados", label: "Publicados" },
+  ...ETAPA_OPTIONS,
+];
 
 function ImoveisTab({ properties, setProperties }) {
   const [openIdx, setOpenIdx] = useState(null);
+  const [migrating, setMigrating] = useState(false);
+  const [filter, setFilter] = useState("all");
+  function isVisible(p) {
+    if (filter === "all") return true;
+    if (filter === "rascunhos") return !p.publicado;
+    if (filter === "publicados") return !!p.publicado;
+    return (p.etapa || "captado") === filter;
+  }
+  const visibleCount = properties.filter(isVisible).length;
+  function togglePublish(i, p) {
+    // Ao publicar, avança a etapa para "publicado" automaticamente.
+    update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? "publicado" : p.etapa });
+  }
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
+  async function migrateStatus() {
+    if (!confirm("Isto lê os imóveis já salvos, move VENDIDO / EXCLUSIVIDADE / ALUGADO do título para o campo Situação e limpa os títulos (as URLs são preservadas).\n\nSalve suas alterações antes. Deseja continuar?")) return;
+    setMigrating(true);
+    try {
+      const res = await fetch("/api/admin/migrate", { method: "POST" });
+      const j = await res.json().catch(() => ({}));
+      if (j.ok) {
+        setProperties(j.properties);
+        alert(`Migração concluída: ${j.changed} de ${j.total} imóvel(is) ajustado(s).`);
+      } else {
+        alert(j.error || "Falha na migração.");
+      }
+    } catch {
+      alert("Erro de conexão.");
+    }
+    setMigrating(false);
+  }
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
   function add() { const code = nextCode(properties); setProperties([emptyProperty(code), ...properties]); setOpenIdx(0); }
   function move(i, dir) {
@@ -289,8 +351,47 @@ function ImoveisTab({ properties, setProperties }) {
     <Card title={`Imóveis cadastrados (${properties.length})`}>
       <button onClick={add} className="mb-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">+ Cadastrar novo imóvel</button>
       <p className="mb-4 text-xs text-ink-muted">Use as setas ↑ ↓ para reordenar. Essa ordem vale na <strong>capa</strong> e nos <strong>destaques</strong> da home.</p>
+
+      {/* Manutenção única: extrai VENDIDO/EXCLUSIVIDADE/ALUGADO dos títulos para o campo Situação */}
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-black/15 bg-black/[0.02] p-3">
+        <button
+          onClick={migrateStatus}
+          disabled={migrating}
+          className="rounded-lg border border-black/15 bg-white px-3.5 py-2 text-xs font-semibold text-ink-secondary hover:bg-black/5 disabled:opacity-60"
+        >
+          {migrating ? "Migrando..." : "Migrar títulos → Situação"}
+        </button>
+        <span className="text-xs text-ink-muted">
+          Ação única: tira o “VENDIDO”/“EXCLUSIVIDADE” do texto do título e joga para o campo <strong>Situação</strong>. Pode rodar mais de uma vez sem problema.
+        </span>
+      </div>
+
+      {/* Filtro por etapa do funil / publicação */}
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        {FILTERS.map((f) => {
+          const active = filter === f.value;
+          return (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-ink text-white" : "bg-black/5 text-ink-secondary hover:bg-black/10"}`}
+            >
+              {f.label}
+            </button>
+          );
+        })}
+        <span className="ml-1 text-xs text-ink-muted">{visibleCount} de {properties.length}</span>
+      </div>
+
       <div className="space-y-3">
-        {properties.map((p, i) => (
+        {visibleCount === 0 && (
+          <div className="rounded-lg border border-dashed border-ink-muted p-8 text-center text-sm text-ink-muted">
+            Nenhum imóvel neste filtro.
+          </div>
+        )}
+        {properties.map((p, i) => {
+          if (!isVisible(p)) return null;
+          return (
           <div key={p.id || i} className="rounded-lg border border-black/10 bg-white">
             <div className="flex w-full items-center gap-3 px-4 py-3">
               {/* reordenar */}
@@ -314,9 +415,17 @@ function ImoveisTab({ properties, setProperties }) {
                 </span>
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                {!p.publicado && <span className="rounded bg-ink px-2 py-0.5 text-[10px] font-semibold text-white">RASCUNHO</span>}
+                <span className="hidden rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted sm:inline">{ETAPA_LABEL[p.etapa || "captado"]}</span>
                 {p.cover && <span className="rounded bg-ink px-2 py-0.5 text-[10px] font-semibold text-white">CAPA</span>}
                 {p.featured && <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary-dark">DESTAQUE</span>}
+                <button
+                  onClick={() => togglePublish(i, p)}
+                  className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-colors ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}
+                >
+                  {p.publicado ? "Despublicar" : "Publicar"}
+                </button>
                 <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-label="Abrir" className="text-ink-muted">{openIdx === i ? "▲" : "▼"}</button>
               </div>
             </div>
@@ -347,6 +456,22 @@ function ImoveisTab({ properties, setProperties }) {
                     O tempo de troca do carrossel é definido na aba “Capa”.
                   </p>
                 )}
+                {/* Ciclo de vida / publicação */}
+                <div className="rounded-lg border border-black/10 bg-white p-3">
+                  <span className="mb-2 block text-sm font-semibold text-ink-secondary">Situação & Publicação</span>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <LabeledSelect label="Situação (badge no site)" value={p.status || "disponivel"} options={STATUS_OPTIONS} onChange={(v) => update(i, { ...p, status: v })} />
+                    <LabeledSelect label="Etapa (funil interno)" value={p.etapa || "captado"} options={ETAPA_OPTIONS} onChange={(v) => update(i, { ...p, etapa: v })} />
+                  </div>
+                  <label className="mt-3 flex items-start gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
+                    <input type="checkbox" checked={!!p.publicado} onChange={(e) => update(i, { ...p, publicado: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
+                    <span>
+                      <strong>{p.publicado ? "✅ Publicado no site" : "📝 Rascunho (não aparece no site)"}</strong>
+                      <span className="block text-xs text-ink-muted">Desmarcado, o imóvel existe só aqui no painel. Marque para exibir na home e na listagem.</span>
+                    </span>
+                  </label>
+                </div>
+
                 <Field label="Título" value={p.title} onChange={(v) => update(i, { ...p, title: v })} placeholder="Ex: Casa à venda em SJC no bairro Urbanova - 4 quartos" />
                 <div className="grid grid-cols-2 gap-3">
                   <SelectField label="Tipo" value={p.type} options={TYPES} onChange={(v) => update(i, { ...p, type: v })} />
@@ -380,15 +505,52 @@ function ImoveisTab({ properties, setProperties }) {
                   <NumberField label="Banheiros" value={p.bathrooms} onChange={(v) => update(i, { ...p, bathrooms: v })} />
                   <NumberField label="Vagas" value={p.parking} onChange={(v) => update(i, { ...p, parking: v })} />
                 </div>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <Field label="Condomínio (nome)" value={p.condominio} onChange={(v) => update(i, { ...p, condominio: v })} />
+                  <NumberField label="Andar" value={p.andar} onChange={(v) => update(i, { ...p, andar: v })} />
+                  <label className="flex items-center gap-2 self-end pb-2.5 text-sm text-ink-secondary">
+                    <input type="checkbox" checked={!!p.mobiliado} onChange={(e) => update(i, { ...p, mobiliado: e.target.checked })} className="h-4 w-4 accent-primary" />
+                    Mobiliado
+                  </label>
+                </div>
                 <TextArea label="Descrição (Sobre o imóvel)" value={p.description} onChange={(v) => update(i, { ...p, description: v })} />
                 <TextArea label="Instalações do imóvel (uma por linha)" value={(p.features || []).join("\n")} onChange={(v) => update(i, { ...p, features: linesToArray(v) })} />
                 <TextArea label="Instalações do condomínio (uma por linha)" value={(p.condoFeatures || []).join("\n")} onChange={(v) => update(i, { ...p, condoFeatures: linesToArray(v) })} />
+                {/* Proprietário */}
+                <div className="rounded-lg border border-black/10 bg-white p-3">
+                  <span className="mb-2 block text-sm font-semibold text-ink-secondary">Proprietário</span>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Nome" value={p.proprietario?.nome} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), nome: v } })} />
+                    <Field label="Contato (telefone/WhatsApp)" value={p.proprietario?.contato} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), contato: v } })} />
+                  </div>
+                  <label className="mt-3 flex items-center gap-2 text-sm text-ink-secondary">
+                    <input type="checkbox" checked={!!p.proprietario?.exclusividade} onChange={(e) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), exclusividade: e.target.checked } })} className="h-4 w-4 accent-primary" />
+                    Contrato de exclusividade com a Paula
+                  </label>
+                </div>
+
+                {/* Captação (campo) */}
+                <div className="rounded-lg border border-black/10 bg-white p-3">
+                  <span className="mb-2 block text-sm font-semibold text-ink-secondary">Captação</span>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-medium text-ink-secondary">Data da captação</span>
+                      <input type="date" value={p.captacao?.data || ""} onChange={(e) => update(i, { ...p, captacao: { ...(p.captacao || {}), data: e.target.value } })} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary" />
+                    </label>
+                    <Field label="Capturado por" value={p.captacao?.capturadoPor} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), capturadoPor: v } })} placeholder="Ex: nome do fotógrafo" />
+                  </div>
+                  <div className="mt-3">
+                    <TextArea label="Observações da captação" value={p.captacao?.observacoes} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), observacoes: v } })} />
+                  </div>
+                </div>
+
                 <MultiImageField images={p.images || []} onChange={(imgs) => update(i, { ...p, images: imgs })} coverImage={p.coverImage} showCover={!!p.cover} onSetCover={(src) => update(i, { ...p, coverImage: src })} />
                 <button onClick={() => remove(i)} className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Excluir imóvel</button>
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
@@ -681,6 +843,17 @@ function SelectField({ label, value, options, onChange }) {
       <span className="mb-1 block text-sm font-medium text-ink-secondary">{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary">
         {options.map((o) => <option key={o}>{o}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function LabeledSelect({ label, value, options, onChange }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-ink-secondary">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary">
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </label>
   );
