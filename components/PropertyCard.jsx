@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { formatBRL } from "@/lib/format";
 import PropertySpecs from "./PropertySpecs";
-import StatusBadge from "./StatusBadge";
+import StatusBadge, { StatusRibbon } from "./StatusBadge";
 
 function Badges({ operation, status }) {
   return (
     <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
-      <StatusBadge status={status} />
+      {/* vendido/alugado viram faixa diagonal; aqui a pílula fica só p/ exclusividade */}
+      <StatusBadge status={status === "exclusividade" ? status : undefined} />
       {(operation || []).map((op) => (
         <span
           key={op}
@@ -21,7 +22,7 @@ function Badges({ operation, status }) {
   );
 }
 
-function Gallery({ images = [], alt, heightClass }) {
+function Gallery({ images = [], alt, heightClass, status }) {
   const [i, setI] = useState(0);
   const imgs = images.length ? images : ["https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80"];
   const go = (e, d) => {
@@ -32,6 +33,7 @@ function Gallery({ images = [], alt, heightClass }) {
   return (
     <div className={`group/gal relative w-full overflow-hidden ${heightClass}`}>
       <img src={imgs[i]} alt={alt} className="h-full w-full object-cover" />
+      <StatusRibbon status={status} />
       {imgs.length > 1 && (
         <>
           <button onClick={(e) => go(e, -1)} aria-label="Anterior" className="absolute left-2 top-1/2 z-10 hidden -translate-y-1/2 items-center justify-center rounded-full bg-white/85 p-1.5 text-ink shadow group-hover/gal:flex">
@@ -83,7 +85,7 @@ export default function PropertyCard({ p, variant = "list" }) {
       <a href={href} className="block min-w-[280px] max-w-[300px] snap-start overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm transition-shadow hover:shadow-lg">
         <div className="relative">
           <Badges operation={p.operation} status={p.status} />
-          <Gallery images={p.images} alt={p.title} heightClass="h-44" />
+          <Gallery images={p.images} alt={p.title} heightClass="h-44" status={p.status} />
         </div>
         <div className="flex flex-col gap-1 p-4">
           <h3 className="line-clamp-2 text-sm font-semibold text-ink">{p.title}</h3>
@@ -99,8 +101,8 @@ export default function PropertyCard({ p, variant = "list" }) {
   return (
     <a href={href} className="flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white transition-shadow hover:shadow-lg md:h-[260px] md:flex-row">
       <div className="relative md:w-[360px] md:shrink-0">
-        <Badges operation={p.operation} />
-        <Gallery images={p.images} alt={p.title} heightClass="h-56 md:h-full" />
+        <Badges operation={p.operation} status={p.status} />
+        <Gallery images={p.images} alt={p.title} heightClass="h-56 md:h-full" status={p.status} />
       </div>
       <div className="flex flex-1 flex-col gap-1.5 overflow-hidden p-5">
         <h3 className="line-clamp-2 font-poppins text-base font-semibold leading-snug text-ink">{p.title}</h3>

@@ -16,3 +16,17 @@ export default function StatusBadge({ status, className = "" }) {
     </span>
   );
 }
+
+// Faixa diagonal no canto da foto para situações "fechadas" (vendido/alugado).
+// Exige um contêiner pai com `position: relative` e `overflow: hidden` (o box da imagem).
+const RIBBON_LABEL = { vendido: "VENDIDO", alugado: "ALUGADO" };
+
+export function StatusRibbon({ status }) {
+  const label = RIBBON_LABEL[status];
+  if (!label) return null;
+  return (
+    <span className="pointer-events-none absolute right-[-40px] top-[18px] z-20 w-[150px] rotate-45 bg-ink py-1 text-center text-[11px] font-bold uppercase tracking-wider text-white shadow-md">
+      {label}
+    </span>
+  );
+}

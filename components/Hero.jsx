@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatBRL } from "@/lib/format";
 import PropertySpecs from "./PropertySpecs";
-import StatusBadge from "./StatusBadge";
+import StatusBadge, { StatusRibbon } from "./StatusBadge";
 
 function HeroCard({ p, badge, button }) {
   const img = p.coverImage || p.images?.[0];
@@ -14,8 +14,9 @@ function HeroCard({ p, badge, button }) {
     >
       <div className="relative h-44 w-full overflow-hidden">
         {img && <img src={img} alt={p.title} className="h-full w-full object-cover" />}
+        <StatusRibbon status={p.status} />
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-          <StatusBadge status={p.status} />
+          <StatusBadge status={p.status === "exclusividade" ? p.status : undefined} />
           {(p.operation || []).map((op) => (
             <span key={op} className="rounded bg-black/70 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
               {op}
