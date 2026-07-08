@@ -651,7 +651,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   const [filter, setFilter] = useState("all");
   const [respFilter, setRespFilter] = useState("");
   const [query, setQuery] = useState("");
-  const [view, setView] = useState("funil");
+  const [view, setView] = useState("lista");
   const [collapsed, setCollapsed] = useState({});
   const [dragIdx, setDragIdx] = useState(null);
   const [overCol, setOverCol] = useState(null);
@@ -766,8 +766,8 @@ function ImoveisTab({ properties, setProperties, data }) {
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar código, título ou bairro" className="h-10 w-full rounded-lg border border-inputborder pl-9 pr-3 text-sm outline-none focus:border-primary" />
         </div>
         <div className="flex overflow-hidden rounded-lg border border-black/10">
-          <button onClick={() => setView("funil")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "funil" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>▚ Funil</button>
           <button onClick={() => setView("lista")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "lista" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>☰ Lista</button>
+          <button onClick={() => setView("funil")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "funil" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>▚ Funil</button>
           <button onClick={() => setView("capa")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "capa" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>🏠 Vitrine do site</button>
         </div>
       </div>
