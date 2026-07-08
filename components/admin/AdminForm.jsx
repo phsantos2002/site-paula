@@ -50,6 +50,13 @@ const DISTRIBUICAO_ITENS = [
   { key: "reels", label: "Reels (Instagram)" },
   { key: "anuncio", label: "Anúncio (Meta Ads)" },
 ];
+
+// Colunas/seções fixas de negócio fechado, depois do funil. Baseadas na SITUAÇÃO
+// (status), não na etapa — um imóvel vendido/alugado vive aqui, publicado ou não.
+const SPECIAL_COLS = [
+  { id: "__vendidos", label: "Vendidos", status: "vendido", accent: "#111827", emoji: "💰", hint: "Venda fechada" },
+  { id: "__alugados", label: "Alugados", status: "alugado", accent: "#0ea5e9", emoji: "🔑", hint: "Locação fechada" },
+];
 function distribCount(p) {
   return DISTRIBUICAO_ITENS.filter((it) => p.distribuicao?.[it.key]).length;
 }
@@ -575,10 +582,29 @@ function ImoveisTab({ properties, setProperties, data }) {
   const etapaLabel = Object.fromEntries(funnel.map((f) => [f.id, f.label]));
   const firstId = etapaValues[0];
   const lastId = etapaValues[etapaValues.length - 1];
-  // Em qual coluna o imóvel aparece: publicado => última etapa; senão a etapa (ou a 1ª).
+  // Colunas do Kanban = etapas do funil + Vendidos/Alugados (por situação).
+  const columnsAll = [
+    ...funnel.map((f, idx) => ({ kind: "stage", id: f.id, label: f.label, hint: f.hint, owner: f.owner, num: idx + 1 })),
+    ...SPECIAL_COLS.map((s) => ({ kind: "special", ...s })),
+  ];
+  // Em qual coluna o imóvel aparece. Vendido/alugado vencem; senão publicado => última etapa.
   function columnOf(p) {
+    if (p.status === "vendido") return "__vendidos";
+    if (p.status === "alugado") return "__alugados";
     if (p.publicado) return lastId;
     return etapaValues.includes(p.etapa) ? p.etapa : firstId;
+  }
+  // Mover um imóvel para uma coluna (arrastar/setas). Especial = muda a situação;
+  // etapa do funil = limpa vendido/alugado e aplica a regra de publicação.
+  function moveToColumn(i, col) {
+    const p = properties[i];
+    if (!col) return;
+    if (col.kind === "special") {
+      update(i, { ...p, status: col.status });
+    } else {
+      const status = p.status === "vendido" || p.status === "alugado" ? "disponivel" : p.status;
+      update(i, { ...p, etapa: col.id, publicado: col.id === lastId, status });
+    }
   }
 
   function isVisible(p) {
@@ -591,11 +617,6 @@ function ImoveisTab({ properties, setProperties, data }) {
   function togglePublish(i, p) {
     // Ao publicar, avança para a última etapa; ao despublicar, mantém a etapa.
     update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? lastId : p.etapa });
-  }
-  function moveToEtapa(i, etapa) {
-    // Arrastar no Kanban: a última coluna publica; sair dela vira rascunho.
-    const p = properties[i];
-    update(i, { ...p, etapa, publicado: etapa === lastId });
   }
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
   async function migrateStatus() {
@@ -637,9 +658,19 @@ function ImoveisTab({ properties, setProperties, data }) {
   const q = query.trim().toLowerCase();
   const matchesQuery = (p) => !q || `${p.title} ${p.code} ${p.neighborhood} ${p.city}`.toLowerCase().includes(q);
   const rows = properties.map((p, i) => ({ p, i })).filter(({ p }) => isVisible(p) && matchesQuery(p));
-  const rascunhos = rows.filter(({ p }) => !p.publicado);
-  const noSite = rows.filter(({ p }) => p.publicado);
-  const ordered = [...rascunhos.map((r) => ({ ...r, g: "rascunho" })), ...noSite.map((r) => ({ ...r, g: "nosite" }))];
+  const isClosed = (p) => p.status === "vendido" || p.status === "alugado";
+  const vendidos = rows.filter(({ p }) => p.status === "vendido");
+  const alugados = rows.filter(({ p }) => p.status === "alugado");
+  const rascunhos = rows.filter(({ p }) => !p.publicado && !isClosed(p));
+  const noSite = rows.filter(({ p }) => p.publicado && !isClosed(p));
+  const ordered = [
+    ...rascunhos.map((r) => ({ ...r, g: "rascunho" })),
+    ...noSite.map((r) => ({ ...r, g: "nosite" })),
+    ...vendidos.map((r) => ({ ...r, g: "vendidos" })),
+    ...alugados.map((r) => ({ ...r, g: "alugados" })),
+  ];
+  const GROUP_LABEL = { rascunho: "Rascunhos · em produção", nosite: "No site", vendidos: "Vendidos", alugados: "Alugados" };
+  const groupCounts = { rascunho: rascunhos.length, nosite: noSite.length, vendidos: vendidos.length, alugados: alugados.length };
   const respCounts = team.reduce((a, r) => { a[r.id] = properties.filter((p) => p.responsavel === r.id).length; return a; }, {});
 
   return (
@@ -696,11 +727,11 @@ function ImoveisTab({ properties, setProperties, data }) {
       {view === "funil" ? (
         /* ===== KANBAN (funil de produção) ===== */
         <>
-          <p className="mb-2 text-xs text-ink-muted">Arraste os cards entre as colunas para mudar a etapa · use as setas ◄ ► · clique num card para editar.</p>
+          <p className="mb-2 text-xs text-ink-muted">Arraste os cards entre as colunas · as duas últimas (<strong>Vendidos</strong>/<strong>Alugados</strong>) marcam o negócio fechado · clique num card para editar.</p>
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {funnel.map((col, idx) => {
-              const owner = teamBy[col.owner];
-              const accent = owner?.color || "#94a3b8";
+            {columnsAll.map((col, idx) => {
+              const owner = col.kind === "stage" ? teamBy[col.owner] : null;
+              const accent = col.kind === "special" ? col.accent : owner?.color || "#94a3b8";
               const cards = rows.filter(({ p }) => columnOf(p) === col.id);
               const isOver = overCol === col.id;
               const cur = idx;
@@ -708,16 +739,18 @@ function ImoveisTab({ properties, setProperties, data }) {
                 <div
                   key={col.id}
                   onDragOver={(e) => { e.preventDefault(); if (overCol !== col.id) setOverCol(col.id); }}
-                  onDrop={() => { if (dragIdx != null) moveToEtapa(dragIdx, col.id); setDragIdx(null); setOverCol(null); }}
-                  className={`flex w-[248px] shrink-0 flex-col rounded-xl border transition-colors ${isOver ? "border-primary bg-primary/5" : "border-black/10 bg-black/[0.02]"}`}
+                  onDrop={() => { if (dragIdx != null) moveToColumn(dragIdx, col); setDragIdx(null); setOverCol(null); }}
+                  className={`flex w-[248px] shrink-0 flex-col rounded-xl border transition-colors ${isOver ? "border-primary bg-primary/5" : col.kind === "special" ? "border-black/10 bg-black/[0.04]" : "border-black/10 bg-black/[0.02]"}`}
                 >
                   <div className="rounded-t-xl border-t-[3px] px-3 pb-2.5 pt-2" style={{ borderTopColor: accent }}>
                     <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: accent }}>{idx + 1}</span>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: accent }}>{col.kind === "special" ? col.emoji : col.num}</span>
                       <span className="text-[13px] font-semibold text-ink">{col.label}</span>
                       <span className="ml-auto rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{cards.length}</span>
                     </div>
-                    <div className="mt-1.5"><ResponsavelChip member={owner} size="xs" /></div>
+                    {col.kind === "stage"
+                      ? <div className="mt-1.5"><ResponsavelChip member={owner} size="xs" /></div>
+                      : <div className="mt-1.5"><span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white" style={{ background: accent }}>{col.status}</span></div>}
                     {col.hint && <p className="mt-1 text-[10px] leading-tight text-ink-muted">{col.hint}</p>}
                   </div>
                   <div className="flex-1 space-y-2 p-2">
@@ -733,9 +766,9 @@ function ImoveisTab({ properties, setProperties, data }) {
                         onDragStart={() => setDragIdx(i)}
                         onDragEnd={() => { setDragIdx(null); setOverCol(null); }}
                         onResp={(v) => update(i, { ...p, responsavel: v })}
-                        onMove={(dir) => { const t = cur + dir; if (t >= 0 && t < etapaValues.length) moveToEtapa(i, etapaValues[t]); }}
+                        onMove={(dir) => { const t = cur + dir; if (t >= 0 && t < columnsAll.length) moveToColumn(i, columnsAll[t]); }}
                         canPrev={cur > 0}
-                        canNext={cur < etapaValues.length - 1}
+                        canNext={cur < columnsAll.length - 1}
                       />
                     ))}
                   </div>
@@ -753,19 +786,20 @@ function ImoveisTab({ properties, setProperties, data }) {
           {ordered.map((row, k) => {
             const { p, i, g } = row;
             const firstOfGroup = k === 0 || ordered[k - 1].g !== g;
-            const groupCount = g === "rascunho" ? rascunhos.length : noSite.length;
+            const groupCount = groupCounts[g];
             const isOpen = !collapsed[g];
+            const borderColor = p.status === "vendido" ? "#111827" : p.status === "alugado" ? "#0ea5e9" : p.publicado ? "#4ecb5b" : "#ffa200";
             return (
               <Fragment key={p.id || i}>
                 {firstOfGroup && (
                   <button type="button" onClick={() => setCollapsed((c) => ({ ...c, [g]: !c[g] }))} className="mt-2 flex w-full items-center gap-2 px-1 py-1 text-left first:mt-0">
                     <span className="text-ink-muted">{isOpen ? "▾" : "▸"}</span>
-                    <span className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">{g === "rascunho" ? "Rascunhos · em produção" : "No site"}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">{GROUP_LABEL[g]}</span>
                     <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{groupCount}</span>
                   </button>
                 )}
                 {isOpen && (
-                  <div className={`group rounded-lg border border-black/10 bg-white border-l-4 ${p.publicado ? "border-l-[#4ecb5b]" : "border-l-[#ffa200]"}`}>
+                  <div className="group rounded-lg border border-black/10 bg-white border-l-4" style={{ borderLeftColor: borderColor }}>
                     <div className="flex w-full items-center gap-2 px-3 py-2.5 md:gap-3 md:px-4">
                       {showReorder && (
                         <div className="flex flex-col md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
