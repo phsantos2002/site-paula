@@ -253,7 +253,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
           })}
         </nav>
 
-        <div className="min-w-0 flex-1 space-y-6">
+        <div className="min-w-0 flex-1 space-y-6 overflow-x-clip">
           {tab === "contatos" && <ContatosTab leads={leads} setLeads={setLeads} />}
           {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setProperties} data={data} />}
           {tab === "equipe" && <EquipeTab data={data} setSection={setSection} />}
@@ -397,12 +397,12 @@ function RespPicker({ value, onChange, team, compact }) {
   const m = (team || []).find((t) => t.id === value);
   const s = m ? memberStyle(m) : { color: "#6b7280", background: "#f3f4f6", ring: "#e5e7eb" };
   return (
-    <span className="relative inline-flex">
+    <span className="relative inline-flex min-w-0 max-w-full">
       <select
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
         onClick={(e) => e.stopPropagation()}
-        className={`cursor-pointer appearance-none rounded-full border-0 font-semibold outline-none ${compact ? "py-1 pl-2 pr-6 text-[11px]" : "h-10 pl-3 pr-8 text-sm"}`}
+        className={`w-full cursor-pointer appearance-none truncate rounded-full border-0 font-semibold outline-none ${compact ? "max-w-[150px] py-1 pl-2 pr-6 text-[11px]" : "h-10 pl-3 pr-8 text-sm"}`}
         style={{ color: s.color, background: s.background, boxShadow: `inset 0 0 0 1px ${s.ring}` }}
       >
         <option value="">👤 Sem responsável</option>
@@ -455,9 +455,9 @@ function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragE
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-1 border-t border-black/5 px-2 py-1.5">
+      <div className="flex min-w-0 items-center justify-between gap-1 border-t border-black/5 px-2 py-1.5">
         <RespPicker compact team={team} value={p.responsavel} onChange={onResp} />
-        <span className="flex items-center gap-1.5">
+        <span className="flex shrink-0 items-center gap-1.5">
           <StepDots p={p} />
           {p.publicado && <><span className="h-3 w-px bg-black/10" /><span title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}><DistribDots p={p} /></span></>}
         </span>
@@ -856,7 +856,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                   key={col.id}
                   onDragOver={(e) => { e.preventDefault(); if (overCol !== col.id) setOverCol(col.id); }}
                   onDrop={() => { if (dragIdx != null) moveToColumn(dragIdx, col); setDragIdx(null); setOverCol(null); }}
-                  className={`flex w-[240px] shrink-0 flex-col rounded-xl border transition-colors ${isOver ? "border-primary bg-primary/5" : col.kind === "special" ? "border-black/10 bg-black/[0.04]" : "border-black/10 bg-black/[0.02]"}`}
+                  className={`flex w-[82vw] max-w-[300px] shrink-0 flex-col rounded-xl border transition-colors sm:w-[240px] sm:max-w-none ${isOver ? "border-primary bg-primary/5" : col.kind === "special" ? "border-black/10 bg-black/[0.04]" : "border-black/10 bg-black/[0.02]"}`}
                 >
                   <div className="rounded-t-xl border-t-[3px] px-3 pb-2.5 pt-2" style={{ borderTopColor: accent }}>
                     <div className="flex items-center gap-2">
@@ -1085,7 +1085,7 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
 function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown, onRemove, onAdd, onEdit }) {
   const arrow = "flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25";
   return (
-    <div className="rounded-xl border border-black/10 bg-white p-4" style={{ borderTop: `3px solid ${accent}` }}>
+    <div className="min-w-0 overflow-hidden rounded-xl border border-black/10 bg-white p-4" style={{ borderTop: `3px solid ${accent}` }}>
       <div className="mb-1 flex items-center gap-2">
         <h3 className="font-poppins text-base font-semibold text-ink">{title}</h3>
         <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{items.length}</span>
@@ -1094,8 +1094,8 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
       <div className="space-y-2">
         {items.length === 0 && <div className="rounded-lg border border-dashed border-black/15 p-5 text-center text-xs text-ink-muted">Nenhum imóvel aqui ainda. Adicione abaixo.</div>}
         {items.map(({ p, i }, k) => (
-          <div key={p.id || i} className="flex items-center gap-2 rounded-lg border border-black/10 p-2">
-            <div className="flex flex-col">
+          <div key={p.id || i} className="flex min-w-0 items-center gap-2 rounded-lg border border-black/10 p-2">
+            <div className="flex shrink-0 flex-col">
               <button onClick={() => onUp(k)} disabled={k === 0} aria-label="Subir" className={arrow}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg></button>
               <button onClick={() => onDown(k)} disabled={k === items.length - 1} aria-label="Descer" className={arrow}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></button>
             </div>
@@ -1107,8 +1107,8 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
               <div className="truncate text-sm font-medium text-ink">{p.title || "(sem título)"}</div>
               <div className="truncate text-xs text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}{!p.publicado ? " · rascunho" : ""}</div>
             </div>
-            <button onClick={() => onEdit(i)} title="Editar" className="flex h-7 w-7 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
-            {onRemove && <button onClick={() => onRemove(i)} title="Remover daqui" className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-black/5 hover:text-red-600"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>}
+            <button onClick={() => onEdit(i)} title="Editar" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
+            {onRemove && <button onClick={() => onRemove(i)} title="Remover daqui" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-black/5 hover:text-red-600"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>}
           </div>
         ))}
       </div>
