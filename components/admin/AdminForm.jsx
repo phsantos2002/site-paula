@@ -646,10 +646,31 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
   );
 }
 
+/* Grupo de filtro (chips). value "" = sem filtro; options = [{value,label}]. */
+function FilterGroup({ label, value, onChange, options }) {
+  return (
+    <div>
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{label}</span>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((o) => {
+          const active = value === o.value;
+          return (
+            <button key={o.value} onClick={() => onChange(o.value)} className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-ink text-white" : "bg-black/5 text-ink-secondary hover:bg-black/10"}`}>{o.label}</button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ImoveisTab({ properties, setProperties, data }) {
   const [openIdx, setOpenIdx] = useState(null);
   const [filter, setFilter] = useState("all");
   const [respFilter, setRespFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [etapaFilter, setEtapaFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState("lista");
   const [collapsed, setCollapsed] = useState({});
@@ -692,11 +713,15 @@ function ImoveisTab({ properties, setProperties, data }) {
 
   function isVisible(p) {
     if (respFilter && p.responsavel !== respFilter) return false;
-    if (filter === "rascunhos") return !p.publicado;
-    if (filter === "publicados") return !!p.publicado;
-    if (filter === "distrib_pendente") return !!p.publicado && DISTRIBUICAO_ITENS.some((it) => !p.distribuicao?.[it.key]);
+    if (statusFilter && (p.status || "disponivel") !== statusFilter) return false;
+    if (etapaFilter && (p.etapa || "") !== etapaFilter) return false;
+    if (typeFilter && p.type !== typeFilter) return false;
+    if (filter === "rascunhos" && p.publicado) return false;
+    if (filter === "publicados" && !p.publicado) return false;
+    if (filter === "distrib_pendente" && !(p.publicado && DISTRIBUICAO_ITENS.some((it) => !p.distribuicao?.[it.key]))) return false;
     return true;
   }
+  function clearFilters() { setFilter("all"); setRespFilter(""); setStatusFilter(""); setEtapaFilter(""); setTypeFilter(""); }
   function togglePublish(i, p) {
     // Ao publicar, avança para a última etapa; ao despublicar, mantém a etapa.
     update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? lastId : p.etapa });
@@ -737,7 +762,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   }
 
   // Reordenar só faz sentido na Lista completa (define a ordem da capa/destaques na home).
-  const showReorder = view === "lista" && filter === "all" && !respFilter && !query.trim();
+  const showReorder = view === "lista" && filter === "all" && !respFilter && !statusFilter && !etapaFilter && !typeFilter && !query.trim();
   const q = query.trim().toLowerCase();
   const matchesQuery = (p) => !q || `${p.title} ${p.code} ${p.neighborhood} ${p.city}`.toLowerCase().includes(q);
   const rows = properties.map((p, i) => ({ p, i })).filter(({ p }) => isVisible(p) && matchesQuery(p));
@@ -756,6 +781,20 @@ function ImoveisTab({ properties, setProperties, data }) {
   const groupCounts = { rascunho: rascunhos.length, nosite: noSite.length, vendidos: vendidos.length, alugados: alugados.length };
   const respCounts = team.reduce((a, r) => { a[r.id] = properties.filter((p) => p.responsavel === r.id).length; return a; }, {});
 
+  // Opções dos grupos de filtro
+  const situacaoOptions = [{ value: "", label: "Todas" }, ...STATUS_OPTIONS];
+  const etapaFilterOptions = [{ value: "", label: "Todas" }, ...funnel.map((f) => ({ value: f.id, label: f.label }))];
+  const typeFilterOptions = [{ value: "", label: "Todos" }, ...TYPES.map((t) => ({ value: t, label: t }))];
+  const respFilterOptions = [{ value: "", label: "Todos" }, ...team.map((t) => ({ value: t.id, label: `${t.emoji} ${t.name} (${respCounts[t.id]})` }))];
+  // Filtros ativos (para o contador e as pílulas removíveis)
+  const activePills = [];
+  if (filter !== "all") activePills.push({ key: "estado", label: FILTERS.find((f) => f.value === filter)?.label, clear: () => setFilter("all") });
+  if (statusFilter) activePills.push({ key: "situacao", label: STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label, clear: () => setStatusFilter("") });
+  if (etapaFilter) activePills.push({ key: "etapa", label: etapaLabel[etapaFilter] || etapaFilter, clear: () => setEtapaFilter("") });
+  if (typeFilter) activePills.push({ key: "tipo", label: typeFilter, clear: () => setTypeFilter("") });
+  if (respFilter) activePills.push({ key: "resp", label: teamBy[respFilter]?.name || respFilter, clear: () => setRespFilter("") });
+  const activeCount = activePills.length;
+
   return (
     <Card title={`Imóveis cadastrados (${properties.length})`}>
       {/* Cadastrar + busca + visão */}
@@ -772,30 +811,33 @@ function ImoveisTab({ properties, setProperties, data }) {
         </div>
       </div>
 
-      {/* Filtros de estado */}
-      <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        {FILTERS.map((f) => {
-          const active = filter === f.value;
-          return (
-            <button key={f.value} onClick={() => setFilter(f.value)} className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-ink text-white" : "bg-black/5 text-ink-secondary hover:bg-black/10"}`}>{f.label}</button>
-          );
-        })}
-        <span className="ml-1 text-xs text-ink-muted">{rows.length} de {properties.length}</span>
-      </div>
-
-      {/* Filtro por pessoa da equipe */}
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
-        <span className="mr-0.5 text-xs font-medium text-ink-muted">Responsável:</span>
-        <button onClick={() => setRespFilter("")} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${respFilter === "" ? "bg-ink text-white" : "bg-black/5 text-ink-secondary hover:bg-black/10"}`}>Todos</button>
-        {team.map((r) => {
-          const on = respFilter === r.id;
-          const s = memberStyle(r);
-          return (
-            <button key={r.id} onClick={() => setRespFilter(on ? "" : r.id)} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors" style={on ? { color: "#fff", background: s.color } : { color: s.color, background: s.background, boxShadow: `inset 0 0 0 1px ${s.ring}` }}>
-              <span>{r.emoji}</span>{r.name}<span className="opacity-60">{respCounts[r.id]}</span>
+      {/* Filtros (painel embutido) */}
+      <div className="mb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => setShowFilters((s) => !s)} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${showFilters || activeCount ? "border-ink bg-ink text-white" : "border-black/10 bg-white text-ink-secondary hover:bg-black/5"}`}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>
+            Filtros
+            {activeCount > 0 && <span className={`rounded-full px-1.5 text-[11px] font-bold ${showFilters || activeCount ? "bg-primary text-ink-cta" : "bg-ink text-white"}`}>{activeCount}</span>}
+            <span className="text-[10px] opacity-70">{showFilters ? "▲" : "▼"}</span>
+          </button>
+          <span className="text-xs text-ink-muted">{rows.length} de {properties.length}</span>
+          {activeCount > 0 && !showFilters && activePills.map((pill) => (
+            <button key={pill.key} onClick={pill.clear} className="inline-flex items-center gap-1 rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium text-ink-secondary hover:bg-black/10">
+              {pill.label} <span className="text-ink-muted">✕</span>
             </button>
-          );
-        })}
+          ))}
+          {activeCount > 0 && <button onClick={clearFilters} className="text-xs text-ink-muted underline hover:text-ink-secondary">Limpar</button>}
+        </div>
+
+        {showFilters && (
+          <div className="mt-2 grid gap-4 rounded-xl border border-black/10 bg-black/[0.02] p-4 sm:grid-cols-2 lg:grid-cols-3">
+            <FilterGroup label="Estado" value={filter} onChange={setFilter} options={FILTERS} />
+            <FilterGroup label="Situação" value={statusFilter} onChange={setStatusFilter} options={situacaoOptions} />
+            <FilterGroup label="Etapa do funil" value={etapaFilter} onChange={setEtapaFilter} options={etapaFilterOptions} />
+            <FilterGroup label="Tipo de imóvel" value={typeFilter} onChange={setTypeFilter} options={typeFilterOptions} />
+            <FilterGroup label="Responsável" value={respFilter} onChange={setRespFilter} options={respFilterOptions} />
+          </div>
+        )}
       </div>
 
       {view === "funil" ? (
