@@ -24,11 +24,22 @@ const STATUS_OPTIONS = [
 ];
 const ETAPA_OPTIONS = [
   { value: "captado", label: "1 · Captado" },
-  { value: "fotos_tratadas", label: "2 · Fotos tratadas" },
-  { value: "cadastrado", label: "3 · Cadastrado" },
-  { value: "publicado", label: "4 · Publicado" },
+  { value: "fotos_drive", label: "2 · Fotos no Drive" },
+  { value: "infos", label: "3 · Infos com a Paula" },
+  { value: "no_site", label: "4 · No site" },
 ];
 const ETAPA_LABEL = Object.fromEntries(ETAPA_OPTIONS.map((o) => [o.value, o.label]));
+
+// Checklist de distribuição (marketing) — interno ao painel.
+const DISTRIBUICAO_ITENS = [
+  { key: "videoEditado", label: "Vídeo editado (Drive)" },
+  { key: "carrossel", label: "Carrossel (Instagram)" },
+  { key: "reels", label: "Reels (Instagram)" },
+  { key: "anuncio", label: "Anúncio (Meta Ads)" },
+];
+function distribCount(p) {
+  return DISTRIBUICAO_ITENS.filter((it) => p.distribuicao?.[it.key]).length;
+}
 
 // Reduz/recomprime imagens que o navegador consegue decodificar (jpeg/png/webp),
 // para caber no limite de upload e carregar rápido no site.
@@ -292,6 +303,8 @@ function emptyProperty(code) {
     condominio: "", andar: 0, mobiliado: false,
     proprietario: { nome: "", contato: "", exclusividade: false },
     captacao: { data: "", capturadoPor: "", observacoes: "" },
+    driveLinks: { fotos: "", video: "" },
+    distribuicao: { videoEditado: false, carrossel: false, reels: false, anuncio: false },
   };
 }
 
@@ -300,6 +313,7 @@ const FILTERS = [
   { value: "rascunhos", label: "Rascunhos" },
   { value: "publicados", label: "Publicados" },
   ...ETAPA_OPTIONS,
+  { value: "distrib_pendente", label: "Distribuição pendente" },
 ];
 
 function ImoveisTab({ properties, setProperties }) {
@@ -310,12 +324,13 @@ function ImoveisTab({ properties, setProperties }) {
     if (filter === "all") return true;
     if (filter === "rascunhos") return !p.publicado;
     if (filter === "publicados") return !!p.publicado;
+    if (filter === "distrib_pendente") return !!p.publicado && DISTRIBUICAO_ITENS.some((it) => !p.distribuicao?.[it.key]);
     return (p.etapa || "captado") === filter;
   }
   const visibleCount = properties.filter(isVisible).length;
   function togglePublish(i, p) {
-    // Ao publicar, avança a etapa para "publicado" automaticamente.
-    update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? "publicado" : p.etapa });
+    // Ao publicar, avança a etapa para "No site" automaticamente.
+    update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? "no_site" : p.etapa });
   }
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
   async function migrateStatus() {
@@ -418,6 +433,7 @@ function ImoveisTab({ properties, setProperties }) {
               <div className="flex items-center gap-1.5">
                 {!p.publicado && <span className="rounded bg-ink px-2 py-0.5 text-[10px] font-semibold text-white">RASCUNHO</span>}
                 <span className="hidden rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted sm:inline">{ETAPA_LABEL[p.etapa || "captado"]}</span>
+                {p.publicado && <span className={`hidden rounded px-2 py-0.5 text-[10px] font-medium sm:inline ${distribCount(p) === DISTRIBUICAO_ITENS.length ? "bg-black/5 text-ink-muted" : "bg-primary/20 text-primary-dark"}`}>Distrib. {distribCount(p)}/{DISTRIBUICAO_ITENS.length}</span>}
                 {p.cover && <span className="rounded bg-ink px-2 py-0.5 text-[10px] font-semibold text-white">CAPA</span>}
                 {p.featured && <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary-dark">DESTAQUE</span>}
                 <button
@@ -541,6 +557,29 @@ function ImoveisTab({ properties, setProperties }) {
                   </div>
                   <div className="mt-3">
                     <TextArea label="Observações da captação" value={p.captacao?.observacoes} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), observacoes: v } })} />
+                  </div>
+                </div>
+
+                {/* Material no Google Drive */}
+                <div className="rounded-lg border border-black/10 bg-white p-3">
+                  <span className="mb-2 block text-sm font-semibold text-ink-secondary">Material (Drive)</span>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <DriveLinkField label="Link da pasta de fotos (Drive)" value={p.driveLinks?.fotos} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), fotos: v } })} />
+                    <DriveLinkField label="Link do vídeo (Drive)" value={p.driveLinks?.video} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), video: v } })} />
+                  </div>
+                </div>
+
+                {/* Distribuição (checklist de marketing) */}
+                <div className="rounded-lg border border-black/10 bg-white p-3">
+                  <span className="mb-1 block text-sm font-semibold text-ink-secondary">Distribuição <span className="font-normal text-ink-muted">({distribCount(p)}/{DISTRIBUICAO_ITENS.length})</span></span>
+                  <p className="mb-2 text-xs text-ink-muted">Marque conforme for postando/anunciando.</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {DISTRIBUICAO_ITENS.map((it) => (
+                      <label key={it.key} className="flex items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
+                        <input type="checkbox" checked={!!p.distribuicao?.[it.key]} onChange={(e) => update(i, { ...p, distribuicao: { ...(p.distribuicao || {}), [it.key]: e.target.checked } })} className="h-4 w-4 accent-primary" />
+                        {it.label}
+                      </label>
+                    ))}
                   </div>
                 </div>
 
@@ -844,6 +883,20 @@ function SelectField({ label, value, options, onChange }) {
       <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary">
         {options.map((o) => <option key={o}>{o}</option>)}
       </select>
+    </label>
+  );
+}
+
+function DriveLinkField({ label, value, onChange }) {
+  return (
+    <label className="block">
+      <span className="mb-1 flex items-center justify-between gap-2 text-sm font-medium text-ink-secondary">
+        {label}
+        {value ? (
+          <a href={value} target="_blank" rel="noopener noreferrer" className="shrink-0 text-xs font-normal text-primary-dark underline hover:text-primary">abrir ↗</a>
+        ) : null}
+      </span>
+      <input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="Cole o link do Drive" className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary focus:shadow-focus" />
     </label>
   );
 }

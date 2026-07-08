@@ -73,11 +73,14 @@ Um imóvel existe na base **desde a captação** e só aparece no site quando é
 
 - **Situação** (badge no site): `Disponível` · `Exclusividade` · `Vendido` · `Alugado`.
   Deixou de ser texto no título — vira badge automático (pílula de exclusividade; faixa diagonal para vendido/alugado).
-- **Etapa** (funil interno, não aparece no site): `1 Captado → 2 Fotos tratadas → 3 Cadastrado → 4 Publicado`.
+- **Etapa** (funil de produção até estar no site, interno): `1 Captado → 2 Fotos no Drive → 3 Infos com a Paula → 4 No site`.
 - **Publicado** (interruptor): desmarcado = **rascunho**, existe só no painel; marcado = aparece na home e na listagem.
-  Todo cadastro novo **nasce como rascunho**. O botão **Publicar** (na lista) já avança a etapa para "Publicado".
+  Todo cadastro novo **nasce como rascunho**. O botão **Publicar** (na lista) já avança a etapa para "No site".
+- **Material (Drive)**: campos para colar o link da **pasta de fotos** e do **vídeo** no Google Drive (botão "abrir").
+- **Distribuição** (checklist de marketing, interno): `Vídeo editado (Drive)` · `Carrossel (Instagram)` · `Reels (Instagram)` · `Anúncio (Meta Ads)`.
+  A lista mostra o progresso (`Distrib. N/4`) nos imóveis publicados.
 - **Ficha de captação**: cada imóvel tem **Proprietário** (nome, contato, exclusividade) e **Captação** (data, capturado por, observações), além de condomínio, andar e mobiliado.
-- **Filtro** no topo da lista: `Todos · Rascunhos · Publicados · por etapa`.
+- **Filtro** no topo da lista: `Todos · Rascunhos · Publicados · por etapa · Distribuição pendente`.
 
 > **Migração única (rodar uma vez):** imóveis antigos trazem `VENDIDO`/`EXCLUSIVIDADE` dentro do título.
 > Clique em **"Migrar títulos → Situação"** (aba Imóveis) e depois **Salvar**: o texto sai do título e vira o campo *Situação*.
