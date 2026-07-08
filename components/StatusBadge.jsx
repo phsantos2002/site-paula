@@ -25,7 +25,7 @@ export function StatusRibbon({ status }) {
   const label = RIBBON_LABEL[status];
   if (!label) return null;
   return (
-    <span className="pointer-events-none absolute right-[-40px] top-[18px] z-20 w-[150px] rotate-45 bg-ink py-1 text-center text-[11px] font-bold uppercase tracking-wider text-white shadow-md">
+    <span className="pointer-events-none absolute right-[-40px] top-[18px] z-20 w-[150px] rotate-45 bg-[#ffa200] py-1 text-center text-[11px] font-bold uppercase tracking-wider text-white shadow-md">
       {label}
     </span>
   );
