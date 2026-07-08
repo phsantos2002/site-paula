@@ -25,7 +25,7 @@ const STATUS_OPTIONS = [
   { value: "alugado", label: "Alugado" },
 ];
 // Equipe e funil vêm do content (editáveis por cliente). Estes são só FALLBACKS,
-// usados quando o content ainda não trouxe nada — o painel nunca fica quebrado.
+// usados quando o content ainda não trouxe nada · o painel nunca fica quebrado.
 const DEFAULT_TEAM = [
   { id: "captador", name: "Captador", role: "Fotos & Vídeo", emoji: "🎥", color: "#4f46e5" },
   { id: "corretor", name: "Corretor(a)", role: "Corretagem", emoji: "👤", color: "#db2777" },
@@ -44,7 +44,7 @@ function memberStyle(m) {
   return { color: col, background: col + "1a", ring: col + "55" };
 }
 
-// Checklist de divulgação (marketing do gestor) — interno ao painel.
+// Checklist de divulgação (marketing do gestor) · interno ao painel.
 const DISTRIBUICAO_ITENS = [
   { key: "carrossel", label: "Carrossel (Instagram)" },
   { key: "reels", label: "Reels (Instagram)" },
@@ -52,7 +52,7 @@ const DISTRIBUICAO_ITENS = [
 ];
 
 // Colunas/seções fixas de negócio fechado, depois do funil. Baseadas na SITUAÇÃO
-// (status), não na etapa — um imóvel vendido/alugado vive aqui, publicado ou não.
+// (status), não na etapa · um imóvel vendido/alugado vive aqui, publicado ou não.
 const SPECIAL_COLS = [
   { id: "__vendidos", label: "Vendidos", status: "vendido", accent: "#111827", emoji: "💰", hint: "Venda fechada" },
   { id: "__alugados", label: "Alugados", status: "alugado", accent: "#0ea5e9", emoji: "🔑", hint: "Locação fechada" },
@@ -321,7 +321,7 @@ function ContatosTab({ leads, setLeads }) {
                       {l.nome || "(sem nome)"}{" "}
                       {!l.read && <span className="ml-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-ink-cta">NOVO</span>}
                     </p>
-                    <p className="text-xs text-ink-muted">{formatDate(l.createdAt)} · Interesse: {l.tipo || "—"}</p>
+                    <p className="text-xs text-ink-muted">{formatDate(l.createdAt)} · Interesse: {l.tipo || "·"}</p>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <button onClick={() => toggleRead(i)} className="rounded border border-black/10 px-2.5 py-1 text-xs text-ink-secondary hover:bg-black/5">
@@ -382,7 +382,7 @@ const FILTERS = [
 
 /* Chip do responsável (só leitura). Recebe o membro já resolvido do time. */
 function ResponsavelChip({ member, size = "sm" }) {
-  if (!member) return <span className="text-[11px] text-ink-muted">— sem responsável</span>;
+  if (!member) return <span className="text-[11px] text-ink-muted">sem responsável</span>;
   const s = memberStyle(member);
   const pad = size === "xs" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]";
   return (
@@ -413,7 +413,7 @@ function RespPicker({ value, onChange, team, compact }) {
   );
 }
 
-/* Card do Kanban — faixa colorida do responsável, título, badges, e progresso (Drive/Texto/Ficha). */
+/* Card do Kanban · faixa colorida do responsável, título, badges, e progresso (Drive/Texto/Ficha). */
 function KanbanCard({ p, i, active, team, onOpen, onDragStart, onDragEnd, onResp, onMove, canPrev, canNext }) {
   const member = (team || []).find((t) => t.id === p.responsavel);
   const accent = member?.color || "#cbd5e1";
@@ -433,7 +433,7 @@ function KanbanCard({ p, i, active, team, onOpen, onDragStart, onDragEnd, onResp
             <img src={p.images[0]} alt="" className="h-12 w-16 shrink-0 rounded object-cover" />
           ) : (<span className="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
           <div className="min-w-0 flex-1">
-            <div className={`truncate text-[13px] font-semibold leading-tight ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel — clique"}</div>
+            <div className={`truncate text-[13px] font-semibold leading-tight ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique"}</div>
             <div className="mt-0.5 truncate text-[11px] text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</div>
             {priceTxt && <div className="mt-0.5 truncate text-[11px] font-semibold text-primary-dark">{priceTxt}</div>}
             <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -504,7 +504,7 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
         </label>
       </div>
 
-      {/* Passo 1 — Material no Drive */}
+      {/* Passo 1 · Material no Drive */}
       <div className="rounded-lg border border-black/10 bg-white p-3">
         <StepHeader n={1} emoji="📁" title="Material no Drive" who="fotos e vídeo" done={STEPS[0].done(p)} />
         <p className="mb-2 text-xs text-ink-muted">Cole os links do Drive das fotos e do vídeo deste imóvel.</p>
@@ -514,17 +514,17 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
         </div>
       </div>
 
-      {/* Passo 2 — Texto bruto */}
+      {/* Passo 2 · Texto bruto */}
       <div className="rounded-lg border border-black/10 bg-white p-3">
-        <StepHeader n={2} emoji="✍️" title="Texto bruto" who="descrição crua do imóvel" done={STEPS[1].done(p)} />
-        <p className="mb-2 text-xs text-ink-muted">A descrição do jeito cru (a Paula escreve). Depois esse texto vira a ficha do site abaixo — ex.: passando por uma IA para extrair os campos.</p>
+        <StepHeader n={2} emoji="✍️" title="Texto bruto" who="descrição do imóvel" done={STEPS[1].done(p)} />
+        <p className="mb-2 text-xs text-ink-muted">Descrição do imóvel em texto livre, do jeito que vier. Depois esses dados viram a ficha completa e atraente que aparece no site.</p>
         <TextArea label="" value={p.textoBruto} onChange={(v) => update(i, { ...p, textoBruto: v })} />
       </div>
 
-      {/* Passo 3 — Ficha do site */}
+      {/* Passo 3 · Ficha do site */}
       <div className="rounded-lg border border-primary/40 bg-primary/[0.05] p-3">
         <StepHeader n={3} emoji="📋" title="Ficha do site" who="o que aparece publicado" done={STEPS[2].done(p)} />
-        <p className="text-xs text-ink-muted">Preencha os campos abaixo — é exatamente o que vai aparecer na página do imóvel.</p>
+        <p className="text-xs text-ink-muted">Preencha os campos abaixo · é exatamente o que vai aparecer na página do imóvel.</p>
       </div>
 
       {/* Capa / destaque na home */}
@@ -844,7 +844,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                     {col.hint && <p className="mt-1 text-[10px] leading-tight text-ink-muted">{col.hint}</p>}
                   </div>
                   <div className="flex-1 space-y-2 p-2">
-                    {cards.length === 0 && <div className="rounded-lg border border-dashed border-black/10 py-6 text-center text-[11px] text-ink-muted">— vazio —</div>}
+                    {cards.length === 0 && <div className="rounded-lg border border-dashed border-black/10 py-6 text-center text-[11px] text-ink-muted">vazio</div>}
                     {cards.map(({ p, i }) => (
                       <KanbanCard
                         key={p.id || i}
@@ -908,23 +908,23 @@ function ImoveisTab({ properties, setProperties, data }) {
                           <img src={p.images[0]} alt="" className="h-10 w-14 shrink-0 rounded object-cover" />
                         ) : (<span className="flex h-10 w-14 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
                         <span className="min-w-0">
-                          <span className={`block truncate text-sm font-medium ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel — clique para preencher"}</span>
+                          <span className={`block truncate text-sm font-medium ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique para preencher"}</span>
                           <span className="block truncate text-xs text-ink-muted">Cód: {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
                           <span className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
                             {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
                             <ResponsavelChip member={teamBy[p.responsavel]} size="xs" />
-                            <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "—"}</span>
+                            <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "·"}</span>
                             <StepDots p={p} />
                           </span>
                         </span>
                       </button>
 
                       {/* colunas alinhadas (desktop) */}
-                      <div className="hidden w-24 shrink-0 md:block">{p.status && p.status !== "disponivel" ? <StatusBadge status={p.status} /> : <span className="text-xs text-ink-muted">—</span>}</div>
-                      <div className="hidden w-32 shrink-0 md:block">{teamBy[p.responsavel] ? <ResponsavelChip member={teamBy[p.responsavel]} size="xs" /> : <span className="text-xs text-ink-muted">—</span>}</div>
-                      <div className="hidden w-28 shrink-0 md:block"><span className="rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "—"}</span></div>
+                      <div className="hidden w-24 shrink-0 md:block">{p.status && p.status !== "disponivel" ? <StatusBadge status={p.status} /> : <span className="text-xs text-ink-muted">·</span>}</div>
+                      <div className="hidden w-32 shrink-0 md:block">{teamBy[p.responsavel] ? <ResponsavelChip member={teamBy[p.responsavel]} size="xs" /> : <span className="text-xs text-ink-muted">·</span>}</div>
+                      <div className="hidden w-28 shrink-0 md:block"><span className="rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "·"}</span></div>
                       <div className="hidden w-14 shrink-0 md:block" title="Progresso: Drive · Texto · Ficha"><StepDots p={p} /></div>
-                      <div className="hidden w-16 shrink-0 md:block" title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}>{p.publicado ? <DistribDots p={p} /> : <span className="text-xs text-ink-muted">—</span>}</div>
+                      <div className="hidden w-16 shrink-0 md:block" title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}>{p.publicado ? <DistribDots p={p} /> : <span className="text-xs text-ink-muted">·</span>}</div>
                       <div className="hidden w-12 shrink-0 items-center gap-1 text-sm md:flex">
                         {p.cover && <span title="Capa da home">🏠</span>}
                         {p.featured && <span title="Destaque">⭐</span>}
@@ -970,7 +970,7 @@ function ImoveisTab({ properties, setProperties, data }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setQuickAdd(null)}>
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-ink">Novo imóvel — entrada rápida</h3>
+              <h3 className="text-base font-semibold text-ink">Novo imóvel · entrada rápida</h3>
               <button onClick={() => setQuickAdd(null)} className="rounded-lg px-2 py-1 text-sm text-ink-secondary hover:bg-black/5">✕</button>
             </div>
             <p className="mb-4 text-xs text-ink-muted">Só o básico para começar. O texto e a ficha completa você preenche depois, avançando as etapas.</p>
@@ -982,7 +982,7 @@ function ImoveisTab({ properties, setProperties, data }) {
               </div>
               <Field label="Cidade" value={quickAdd.city} onChange={(v) => setQuickAdd({ ...quickAdd, city: v })} />
               <DriveLinkField label="Link da pasta de fotos (Drive)" value={quickAdd.driveFotos} onChange={(v) => setQuickAdd({ ...quickAdd, driveFotos: v })} />
-              <DriveLinkField label="Link do vídeo (Drive) — opcional" value={quickAdd.driveVideo} onChange={(v) => setQuickAdd({ ...quickAdd, driveVideo: v })} />
+              <DriveLinkField label="Link do vídeo (Drive) · opcional" value={quickAdd.driveVideo} onChange={(v) => setQuickAdd({ ...quickAdd, driveVideo: v })} />
             </div>
             <div className="mt-5 flex items-center justify-end gap-2">
               <button onClick={() => setQuickAdd(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-ink-secondary hover:bg-black/5">Cancelar</button>
@@ -1056,7 +1056,7 @@ function EquipeTab({ data, setSection }) {
             <div key={s.id || i} className="rounded-lg border border-black/10 p-3">
               <div className="mb-2 flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-white">{i + 1}</span>
-                <span className="text-sm font-medium text-ink">{s.label || "—"}</span>
+                <span className="text-sm font-medium text-ink">{s.label || "·"}</span>
                 {i === funnel.length - 1 && <span className="rounded-full bg-[#e8f8ea] px-2 py-0.5 text-[10px] font-semibold text-[#2fa03c]">publica no site</span>}
                 <div className="ml-auto flex items-center gap-1">
                   <button onClick={() => moveFun(i, -1)} disabled={i === 0} className={arrowBtn}>▲</button>
@@ -1069,7 +1069,7 @@ function EquipeTab({ data, setSection }) {
                 <label className="block">
                   <span className="mb-1 block text-xs text-ink-muted">Responsável (dono da etapa)</span>
                   <select value={s.owner || ""} onChange={(e) => updFun(i, { ...s, owner: e.target.value })} className="h-10 w-full rounded-lg border border-inputborder px-2 text-sm outline-none focus:border-primary">
-                    <option value="">—</option>
+                    <option value="">·</option>
                     {team.map((t) => <option key={t.id} value={t.id}>{t.emoji} {t.name}</option>)}
                   </select>
                 </label>
@@ -1134,7 +1134,7 @@ function MarcaTab({ data, patch }) {
           onChange={(v) => patch("colors", "primary", v)}
         />
         <ColorField
-          label="Primária — ao passar o mouse"
+          label="Primária · ao passar o mouse"
           hint="Cor que os botões âmbar assumem quando o cursor passa por cima (efeito hover)."
           value={c.primaryHover}
           onChange={(v) => patch("colors", "primaryHover", v)}
@@ -1225,7 +1225,7 @@ function SecoesTab({ data, patch, setSection }) {
           <Field label="Título destacado" value={ci.headingHighlight} onChange={(v) => patch("cities", "headingHighlight", v)} />
         </div>
         <p className="rounded-lg bg-black/[0.03] p-3 text-xs text-ink-muted">
-          A lista de <strong>cidades e bairros</strong> é montada automaticamente a partir dos imóveis cadastrados (aba Imóveis) —
+          A lista de <strong>cidades e bairros</strong> é montada automaticamente a partir dos imóveis cadastrados (aba Imóveis) ·
           cada bairro só aparece se houver pelo menos um imóvel nele. Aqui você edita apenas o título da seção.
         </p>
       </Card>
@@ -1239,9 +1239,9 @@ function FormTab({ data, patch }) {
   const r = data.register;
   return (
     <Card title="Seção de cadastro (Formulário)">
-      <Field label="Título — linha 1" value={r.headingLine1} onChange={(v) => patch("register", "headingLine1", v)} />
-      <Field label="Título — linha 2" value={r.headingLine2} onChange={(v) => patch("register", "headingLine2", v)} />
-      <Field label="Título — parte destacada" value={r.headingHighlight} onChange={(v) => patch("register", "headingHighlight", v)} />
+      <Field label="Título · linha 1" value={r.headingLine1} onChange={(v) => patch("register", "headingLine1", v)} />
+      <Field label="Título · linha 2" value={r.headingLine2} onChange={(v) => patch("register", "headingLine2", v)} />
+      <Field label="Título · parte destacada" value={r.headingHighlight} onChange={(v) => patch("register", "headingHighlight", v)} />
       <TextArea label="Descrição" value={r.description} onChange={(v) => patch("register", "description", v)} />
       <ImageField label="Imagem de fundo" value={r.image} onChange={(v) => patch("register", "image", v)} />
       <div className="grid grid-cols-2 gap-3">
@@ -1251,8 +1251,8 @@ function FormTab({ data, patch }) {
       <Field label="Texto do botão enviar" value={r.submitText} onChange={(v) => patch("register", "submitText", v)} />
       <TextArea label="Texto dos termos (checkbox)" value={r.termsText} onChange={(v) => patch("register", "termsText", v)} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Mensagem de sucesso — título" value={r.successTitle} onChange={(v) => patch("register", "successTitle", v)} />
-        <Field label="Mensagem de sucesso — texto" value={r.successText} onChange={(v) => patch("register", "successText", v)} />
+        <Field label="Mensagem de sucesso · título" value={r.successTitle} onChange={(v) => patch("register", "successTitle", v)} />
+        <Field label="Mensagem de sucesso · texto" value={r.successText} onChange={(v) => patch("register", "successText", v)} />
       </div>
     </Card>
   );
@@ -1264,7 +1264,7 @@ function RodapeTab({ data, patch }) {
   const f = data.footer;
   return (
     <>
-      <Card title="Rodapé — informações">
+      <Card title="Rodapé · informações">
         <TextArea label="Texto sob a marca" value={f.aboutText} onChange={(v) => patch("footer", "aboutText", v)} />
         <div className="grid grid-cols-3 gap-3">
           <Field label="Título atendimento" value={f.attendanceTitle} onChange={(v) => patch("footer", "attendanceTitle", v)} />
@@ -1273,7 +1273,7 @@ function RodapeTab({ data, patch }) {
         </div>
       </Card>
 
-      <Card title="Rodapé — colunas de links">
+      <Card title="Rodapé · colunas de links">
         <ArrayEditor items={f.columns} onChange={(v) => patch("footer", "columns", v)} empty={{ title: "", links: [] }} render={(col, upd) => (
           <div className="space-y-2">
             <Mini label="Título da coluna" value={col.title} onChange={(v) => upd({ ...col, title: v })} />

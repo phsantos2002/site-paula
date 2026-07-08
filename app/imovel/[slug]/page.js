@@ -29,7 +29,7 @@ export async function generateMetadata({ params }) {
   const description = [
     `${p.type} em ${p.neighborhood}, ${p.city}/${p.state}.`,
     bits.join(" · "),
-    priceTxt && `— ${priceTxt}`,
+    priceTxt && priceTxt,
     `Cód. ${p.code}. Fale com ${seo.fullName}.`,
   ]
     .filter(Boolean)

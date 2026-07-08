@@ -65,7 +65,7 @@ export default function Footer({ brand = {}, contact = {}, footer = {} }) {
 
       <div className="bg-primary px-6 py-4 text-center text-sm text-ink-secondary md:px-[60px]">
         © {year} {brand.name} {brand.nameHighlight}
-        {contact.creci ? ` — ${contact.creciLabel || "CRECI"} ${contact.creci}` : ""} — {brand.tagline}. Todos os direitos reservados.
+        {contact.creci ? ` · ${contact.creciLabel || "CRECI"} ${contact.creci}` : ""} · {brand.tagline}. Todos os direitos reservados.
       </div>
     </footer>
   );
