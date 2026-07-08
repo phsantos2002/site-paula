@@ -932,7 +932,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                         </div>
                       )}
 
-                      <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      <button onClick={() => setOpenIdx(i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                         {p.images?.[0] ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={p.images[0]} alt="" className="h-10 w-14 shrink-0 rounded object-cover" />
@@ -965,13 +965,8 @@ function ImoveisTab({ properties, setProperties, data }) {
 
                       <button onClick={() => togglePublish(i, p)} className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold md:hidden ${p.publicado ? "bg-black/5 text-ink-secondary" : "bg-primary text-ink-cta"}`}>{p.publicado ? "Despub." : "Publicar"}</button>
 
-                      <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-label="Abrir" className="shrink-0 text-ink-muted">{openIdx === i ? "▲" : "▼"}</button>
+                      <button onClick={() => setOpenIdx(i)} title="Editar" aria-label="Editar" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                     </div>
-                    {openIdx === i && (
-                      <div className="border-t border-black/10 p-4">
-                        <PropertyEditor p={p} i={i} update={update} remove={remove} team={team} funnel={funnel} />
-                      </div>
-                    )}
                   </div>
                 )}
               </Fragment>
@@ -980,8 +975,8 @@ function ImoveisTab({ properties, setProperties, data }) {
         </div>
       )}
 
-      {/* Editor em painel lateral (Funil e Capa & Destaques) */}
-      {view !== "lista" && openIdx != null && properties[openIdx] && (
+      {/* Editor em painel lateral (todas as visões) */}
+      {openIdx != null && properties[openIdx] && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={() => setOpenIdx(null)}>
           <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-black/10 px-4 py-3">
