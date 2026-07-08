@@ -209,7 +209,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
     <div className="min-h-screen bg-[#f1f3f5] text-ink">
       {/* Cabeçalho */}
       <header className="sticky top-0 z-30 border-b border-black/10 bg-white/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
+        <div className={`mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6 ${tab === "imoveis" ? "max-w-[1760px]" : "max-w-6xl"}`}>
           <div className="flex items-center gap-2 font-poppins text-lg font-semibold">
             {data.brand?.name} <span className="text-primary-dark">{data.brand?.nameHighlight}</span>
             <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs font-medium text-ink-muted">Painel</span>
@@ -228,7 +228,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-5 md:px-6 lg:flex lg:gap-6">
+      <div className={`mx-auto px-4 py-5 md:px-6 lg:flex lg:gap-6 ${tab === "imoveis" ? "max-w-[1760px]" : "max-w-6xl"}`}>
         {/* Navegação: abas roláveis no mobile, sidebar no desktop */}
         <nav className="no-scrollbar -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6 lg:mx-0 lg:mb-0 lg:w-60 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
           {TABS.map((t) => {
@@ -414,7 +414,7 @@ function RespPicker({ value, onChange, team, compact }) {
 }
 
 /* Card do Kanban · faixa colorida do responsável, título, badges, e progresso (Drive/Texto/Ficha). */
-function KanbanCard({ p, i, active, team, onOpen, onDragStart, onDragEnd, onResp, onMove, canPrev, canNext }) {
+function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragEnd, onResp, onMove, canPrev, canNext }) {
   const member = (team || []).find((t) => t.id === p.responsavel);
   const accent = member?.color || "#cbd5e1";
   const priceTxt = p.price > 0 ? formatBRLShort(p.price) : p.rentPrice > 0 ? `${formatBRLShort(p.rentPrice)}/mês` : "";
@@ -423,8 +423,17 @@ function KanbanCard({ p, i, active, team, onOpen, onDragStart, onDragEnd, onResp
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className={`group overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:-translate-y-px hover:shadow-md"}`}
+      className={`group relative overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:-translate-y-px hover:shadow-md"}`}
     >
+      {/* Ações rápidas (hover) */}
+      <div className="absolute right-1 top-1 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <button onClick={(e) => { e.stopPropagation(); onOpen(); }} title="Editar" className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90 text-ink-secondary shadow-sm ring-1 ring-black/10 hover:bg-white hover:text-ink">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Excluir" className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90 text-red-500 shadow-sm ring-1 ring-black/10 hover:bg-red-500 hover:text-white">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M10 11v6M14 11v6" /></svg>
+        </button>
+      </div>
       <div className="flex cursor-pointer" role="button" onClick={onOpen}>
         <span className="w-1 shrink-0" style={{ background: accent }} aria-hidden />
         <div className="flex min-w-0 flex-1 gap-2 p-2">
@@ -775,6 +784,7 @@ function ImoveisTab({ properties, setProperties, data }) {
         <div className="flex overflow-hidden rounded-lg border border-black/10">
           <button onClick={() => setView("funil")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "funil" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>▚ Funil</button>
           <button onClick={() => setView("lista")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "lista" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>☰ Lista</button>
+          <button onClick={() => setView("capa")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "capa" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>🏠 Capa &amp; Destaques</button>
         </div>
       </div>
 
@@ -830,7 +840,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                   key={col.id}
                   onDragOver={(e) => { e.preventDefault(); if (overCol !== col.id) setOverCol(col.id); }}
                   onDrop={() => { if (dragIdx != null) moveToColumn(dragIdx, col); setDragIdx(null); setOverCol(null); }}
-                  className={`flex w-[248px] shrink-0 flex-col rounded-xl border transition-colors ${isOver ? "border-primary bg-primary/5" : col.kind === "special" ? "border-black/10 bg-black/[0.04]" : "border-black/10 bg-black/[0.02]"}`}
+                  className={`flex w-[240px] shrink-0 flex-col rounded-xl border transition-colors ${isOver ? "border-primary bg-primary/5" : col.kind === "special" ? "border-black/10 bg-black/[0.04]" : "border-black/10 bg-black/[0.02]"}`}
                 >
                   <div className="rounded-t-xl border-t-[3px] px-3 pb-2.5 pt-2" style={{ borderTopColor: accent }}>
                     <div className="flex items-center gap-2">
@@ -853,6 +863,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                         active={dragIdx === i}
                         team={team}
                         onOpen={() => setOpenIdx(i)}
+                        onDelete={() => remove(i)}
                         onDragStart={() => setDragIdx(i)}
                         onDragEnd={() => { setDragIdx(null); setOverCol(null); }}
                         onResp={(v) => update(i, { ...p, responsavel: v })}
@@ -867,6 +878,9 @@ function ImoveisTab({ properties, setProperties, data }) {
             })}
           </div>
         </>
+      ) : view === "capa" ? (
+        /* ===== CAPA & DESTAQUES ===== */
+        <CapaDestaquesOrganizer properties={properties} setProperties={setProperties} onEdit={(idx) => setOpenIdx(idx)} />
       ) : (
         /* ===== LISTA ===== */
         <div className="space-y-3">
@@ -950,8 +964,8 @@ function ImoveisTab({ properties, setProperties, data }) {
         </div>
       )}
 
-      {/* Editor em painel lateral (visão Funil) */}
-      {view === "funil" && openIdx != null && properties[openIdx] && (
+      {/* Editor em painel lateral (Funil e Capa & Destaques) */}
+      {view !== "lista" && openIdx != null && properties[openIdx] && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={() => setOpenIdx(null)}>
           <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-black/10 px-4 py-3">
@@ -992,6 +1006,93 @@ function ImoveisTab({ properties, setProperties, data }) {
         </div>
       )}
     </Card>
+  );
+}
+
+/* ===================== CAPA & DESTAQUES (organizar) ===================== */
+
+function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
+  const upd = (i, np) => { const n = properties.slice(); n[i] = np; setProperties(n); };
+  const moveInSubset = (flag, subIndex, dir) => {
+    const idxs = properties.map((_, i) => i).filter((i) => properties[i][flag]);
+    const a = idxs[subIndex], b = idxs[subIndex + dir];
+    if (a == null || b == null) return;
+    const n = properties.slice();
+    [n[a], n[b]] = [n[b], n[a]];
+    setProperties(n);
+  };
+  const withIdx = properties.map((p, i) => ({ p, i }));
+  const covers = withIdx.filter((x) => x.p.cover);
+  const feats = withIdx.filter((x) => x.p.featured);
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <OrganizerColumn
+        title="🏠 Capa da home"
+        accent="#EFB810"
+        hint="Carrossel grande do topo do site. A ordem aqui é a ordem em que giram. (A foto de capa de cada um é escolhida no editor.)"
+        items={covers}
+        candidates={withIdx.filter((x) => !x.p.cover)}
+        onUp={(k) => moveInSubset("cover", k, -1)}
+        onDown={(k) => moveInSubset("cover", k, 1)}
+        onRemove={(i) => upd(i, { ...properties[i], cover: false })}
+        onAdd={(i) => upd(i, { ...properties[i], cover: true })}
+        onEdit={onEdit}
+      />
+      <OrganizerColumn
+        title="⭐ Destaques"
+        accent="#4f46e5"
+        hint="Seção “Destaques em imóveis” da home. Mostra até 8, na ordem abaixo."
+        items={feats}
+        candidates={withIdx.filter((x) => !x.p.featured)}
+        onUp={(k) => moveInSubset("featured", k, -1)}
+        onDown={(k) => moveInSubset("featured", k, 1)}
+        onRemove={(i) => upd(i, { ...properties[i], featured: false })}
+        onAdd={(i) => upd(i, { ...properties[i], featured: true })}
+        onEdit={onEdit}
+      />
+    </div>
+  );
+}
+
+function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown, onRemove, onAdd, onEdit }) {
+  const arrow = "flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25";
+  return (
+    <div className="rounded-xl border border-black/10 bg-white p-4" style={{ borderTop: `3px solid ${accent}` }}>
+      <div className="mb-1 flex items-center gap-2">
+        <h3 className="font-poppins text-base font-semibold text-ink">{title}</h3>
+        <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{items.length}</span>
+      </div>
+      <p className="mb-3 text-xs text-ink-muted">{hint}</p>
+      <div className="space-y-2">
+        {items.length === 0 && <div className="rounded-lg border border-dashed border-black/15 p-5 text-center text-xs text-ink-muted">Nenhum imóvel aqui ainda. Adicione abaixo.</div>}
+        {items.map(({ p, i }, k) => (
+          <div key={p.id || i} className="flex items-center gap-2 rounded-lg border border-black/10 p-2">
+            <div className="flex flex-col">
+              <button onClick={() => onUp(k)} disabled={k === 0} aria-label="Subir" className={arrow}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg></button>
+              <button onClick={() => onDown(k)} disabled={k === items.length - 1} aria-label="Descer" className={arrow}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></button>
+            </div>
+            {p.images?.[0] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.images[0]} alt="" className="h-11 w-16 shrink-0 rounded object-cover" />
+            ) : (<span className="flex h-11 w-16 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-ink">{p.title || "(sem título)"}</div>
+              <div className="truncate text-xs text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}{!p.publicado ? " · rascunho" : ""}</div>
+            </div>
+            <button onClick={() => onEdit(i)} title="Editar" className="flex h-7 w-7 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
+            <button onClick={() => onRemove(i)} title="Remover daqui" className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-black/5 hover:text-red-600"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+          </div>
+        ))}
+      </div>
+      <select
+        value=""
+        onChange={(e) => { const idx = Number(e.target.value); if (e.target.value !== "" && !Number.isNaN(idx)) onAdd(idx); }}
+        className="mt-3 h-10 w-full rounded-lg border border-inputborder px-2 text-sm outline-none focus:border-primary"
+      >
+        <option value="">+ Adicionar imóvel...</option>
+        {candidates.map(({ p, i }) => <option key={p.id || i} value={i}>{p.code} · {p.title || "(sem título)"}</option>)}
+      </select>
+    </div>
   );
 }
 
