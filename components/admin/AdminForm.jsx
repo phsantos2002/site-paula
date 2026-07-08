@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import StatusBadge from "../StatusBadge";
 
 const TABS = [
   { id: "contatos", label: "Contatos", icon: "M22 5H2v14h20zM2 6l10 7 10-7" },
@@ -39,6 +40,15 @@ const DISTRIBUICAO_ITENS = [
 ];
 function distribCount(p) {
   return DISTRIBUICAO_ITENS.filter((it) => p.distribuicao?.[it.key]).length;
+}
+function DistribDots({ p }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      {DISTRIBUICAO_ITENS.map((it) => (
+        <span key={it.key} className={`h-1.5 w-1.5 rounded-full ${p.distribuicao?.[it.key] ? "bg-primary-dark" : "bg-black/15"}`} />
+      ))}
+    </span>
+  );
 }
 
 // Reduz/recomprime imagens que o navegador consegue decodificar (jpeg/png/webp),
@@ -320,6 +330,9 @@ function ImoveisTab({ properties, setProperties }) {
   const [openIdx, setOpenIdx] = useState(null);
   const [migrating, setMigrating] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const [collapsed, setCollapsed] = useState({});
+  const [showMigrate, setShowMigrate] = useState(false);
   function isVisible(p) {
     if (filter === "all") return true;
     if (filter === "rascunhos") return !p.publicado;
@@ -327,7 +340,6 @@ function ImoveisTab({ properties, setProperties }) {
     if (filter === "distrib_pendente") return !!p.publicado && DISTRIBUICAO_ITENS.some((it) => !p.distribuicao?.[it.key]);
     return (p.etapa || "captado") === filter;
   }
-  const visibleCount = properties.filter(isVisible).length;
   function togglePublish(i, p) {
     // Ao publicar, avança a etapa para "No site" automaticamente.
     update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? "no_site" : p.etapa });
@@ -362,26 +374,27 @@ function ImoveisTab({ properties, setProperties }) {
     else if (openIdx === j) setOpenIdx(i);
   }
 
+  // Reordenar só faz sentido na lista completa (define a ordem da capa/destaques na home).
+  const showReorder = filter === "all" && !query.trim();
+  const q = query.trim().toLowerCase();
+  const matchesQuery = (p) => !q || `${p.title} ${p.code} ${p.neighborhood} ${p.city}`.toLowerCase().includes(q);
+  const rows = properties.map((p, i) => ({ p, i })).filter(({ p }) => isVisible(p) && matchesQuery(p));
+  const rascunhos = rows.filter(({ p }) => !p.publicado);
+  const noSite = rows.filter(({ p }) => p.publicado);
+  const ordered = [...rascunhos.map((r) => ({ ...r, g: "rascunho" })), ...noSite.map((r) => ({ ...r, g: "nosite" }))];
+
   return (
     <Card title={`Imóveis cadastrados (${properties.length})`}>
-      <button onClick={add} className="mb-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">+ Cadastrar novo imóvel</button>
-      <p className="mb-4 text-xs text-ink-muted">Use as setas ↑ ↓ para reordenar. Essa ordem vale na <strong>capa</strong> e nos <strong>destaques</strong> da home.</p>
-
-      {/* Manutenção única: extrai VENDIDO/EXCLUSIVIDADE/ALUGADO dos títulos para o campo Situação */}
-      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-black/15 bg-black/[0.02] p-3">
-        <button
-          onClick={migrateStatus}
-          disabled={migrating}
-          className="rounded-lg border border-black/15 bg-white px-3.5 py-2 text-xs font-semibold text-ink-secondary hover:bg-black/5 disabled:opacity-60"
-        >
-          {migrating ? "Migrando..." : "Migrar títulos → Situação"}
-        </button>
-        <span className="text-xs text-ink-muted">
-          Ação única: tira o “VENDIDO”/“EXCLUSIVIDADE” do texto do título e joga para o campo <strong>Situação</strong>. Pode rodar mais de uma vez sem problema.
-        </span>
+      {/* Cadastrar + busca */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <button onClick={add} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">+ Cadastrar novo imóvel</button>
+        <div className="relative min-w-[200px] flex-1">
+          <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar código, título ou bairro" className="h-10 w-full rounded-lg border border-inputborder pl-9 pr-3 text-sm outline-none focus:border-primary" />
+        </div>
       </div>
 
-      {/* Filtro por etapa do funil / publicação */}
+      {/* Filtros + manutenção */}
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         {FILTERS.map((f) => {
           const active = filter === f.value;
@@ -395,56 +408,85 @@ function ImoveisTab({ properties, setProperties }) {
             </button>
           );
         })}
-        <span className="ml-1 text-xs text-ink-muted">{visibleCount} de {properties.length}</span>
+        <span className="ml-1 text-xs text-ink-muted">{rows.length} de {properties.length}</span>
+        <button onClick={() => setShowMigrate((s) => !s)} className="ml-auto text-xs text-ink-muted underline hover:text-ink-secondary">Manutenção</button>
       </div>
 
+      {showMigrate && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-black/15 bg-black/[0.02] p-3">
+          <button onClick={migrateStatus} disabled={migrating} className="rounded-lg border border-black/15 bg-white px-3.5 py-2 text-xs font-semibold text-ink-secondary hover:bg-black/5 disabled:opacity-60">
+            {migrating ? "Migrando..." : "Migrar títulos → Situação"}
+          </button>
+          <span className="text-xs text-ink-muted">Ação única: tira o “VENDIDO”/“EXCLUSIVIDADE” do texto do título e joga para o campo <strong>Situação</strong>. Pode rodar mais de uma vez sem problema.</span>
+        </div>
+      )}
+
       <div className="space-y-3">
-        {visibleCount === 0 && (
+        {rows.length === 0 && (
           <div className="rounded-lg border border-dashed border-ink-muted p-8 text-center text-sm text-ink-muted">
-            Nenhum imóvel neste filtro.
+            Nenhum imóvel neste filtro/busca.
           </div>
         )}
-        {properties.map((p, i) => {
-          if (!isVisible(p)) return null;
+        {ordered.map((row, k) => {
+          const { p, i, g } = row;
+          const firstOfGroup = k === 0 || ordered[k - 1].g !== g;
+          const groupCount = g === "rascunho" ? rascunhos.length : noSite.length;
+          const isOpen = !collapsed[g];
           return (
-          <div key={p.id || i} className="rounded-lg border border-black/10 bg-white">
-            <div className="flex w-full items-center gap-3 px-4 py-3">
-              {/* reordenar */}
-              <div className="flex flex-col">
-                <button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Mover para cima" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg>
+            <Fragment key={p.id || i}>
+              {firstOfGroup && (
+                <button type="button" onClick={() => setCollapsed((c) => ({ ...c, [g]: !c[g] }))} className="mt-2 flex w-full items-center gap-2 px-1 py-1 text-left first:mt-0">
+                  <span className="text-ink-muted">{isOpen ? "▾" : "▸"}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">{g === "rascunho" ? "Rascunhos · em produção" : "No site"}</span>
+                  <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{groupCount}</span>
                 </button>
-                <button onClick={() => move(i, 1)} disabled={i === properties.length - 1} aria-label="Mover para baixo" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-              </div>
+              )}
+              {isOpen && (
+              <div className={`group rounded-lg border border-black/10 bg-white border-l-4 ${p.publicado ? "border-l-[#4ecb5b]" : "border-l-[#ffa200]"}`}>
+                <div className="flex w-full items-center gap-2 px-3 py-2.5 md:gap-3 md:px-4">
+                  {showReorder && (
+                    <div className="flex flex-col md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
+                      <button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Mover para cima" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg>
+                      </button>
+                      <button onClick={() => move(i, 1)} disabled={i === properties.length - 1} aria-label="Mover para baixo" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
+                      </button>
+                    </div>
+                  )}
 
-              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex flex-1 items-center gap-3 text-left">
-                {p.images?.[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.images[0]} alt="" className="h-10 w-14 rounded object-cover" />
-                ) : (<span className="h-10 w-14 rounded bg-black/5" />)}
-                <span>
-                  <span className="block text-sm font-medium text-ink">{p.title || "(sem título)"}</span>
-                  <span className="block text-xs text-ink-muted">Cód: {p.code} · {p.type} · {(p.operation || []).join(", ")}</span>
-                </span>
-              </button>
+                  <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                    {p.images?.[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.images[0]} alt="" className="h-10 w-14 shrink-0 rounded object-cover" />
+                    ) : (<span className="flex h-10 w-14 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
+                    <span className="min-w-0">
+                      <span className={`block truncate text-sm font-medium ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel — clique para preencher"}</span>
+                      <span className="block truncate text-xs text-ink-muted">Cód: {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
+                      <span className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
+                        {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
+                        <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] text-ink-muted">{ETAPA_LABEL[p.etapa || "captado"]}</span>
+                        {p.publicado && <span className="text-[10px] text-ink-muted">Distrib {distribCount(p)}/{DISTRIBUICAO_ITENS.length}</span>}
+                      </span>
+                    </span>
+                  </button>
 
-              <div className="flex items-center gap-1.5">
-                {!p.publicado && <span className="rounded bg-ink px-2 py-0.5 text-[10px] font-semibold text-white">RASCUNHO</span>}
-                <span className="hidden rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted sm:inline">{ETAPA_LABEL[p.etapa || "captado"]}</span>
-                {p.publicado && <span className={`hidden rounded px-2 py-0.5 text-[10px] font-medium sm:inline ${distribCount(p) === DISTRIBUICAO_ITENS.length ? "bg-black/5 text-ink-muted" : "bg-primary/20 text-primary-dark"}`}>Distrib. {distribCount(p)}/{DISTRIBUICAO_ITENS.length}</span>}
-                {p.cover && <span className="rounded bg-ink px-2 py-0.5 text-[10px] font-semibold text-white">CAPA</span>}
-                {p.featured && <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary-dark">DESTAQUE</span>}
-                <button
-                  onClick={() => togglePublish(i, p)}
-                  className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-colors ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}
-                >
-                  {p.publicado ? "Despublicar" : "Publicar"}
-                </button>
-                <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-label="Abrir" className="text-ink-muted">{openIdx === i ? "▲" : "▼"}</button>
-              </div>
-            </div>
+                  {/* colunas alinhadas (desktop) */}
+                  <div className="hidden w-24 shrink-0 md:block">{p.status && p.status !== "disponivel" ? <StatusBadge status={p.status} /> : <span className="text-xs text-ink-muted">—</span>}</div>
+                  <div className="hidden w-28 shrink-0 md:block"><span className="rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted">{ETAPA_LABEL[p.etapa || "captado"]}</span></div>
+                  <div className="hidden w-16 shrink-0 md:block" title={`Distribuição ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}>{p.publicado ? <DistribDots p={p} /> : <span className="text-xs text-ink-muted">—</span>}</div>
+                  <div className="hidden w-12 shrink-0 items-center gap-1 text-sm md:flex">
+                    {p.cover && <span title="Capa da home">🏠</span>}
+                    {p.featured && <span title="Destaque">⭐</span>}
+                  </div>
+                  <div className="hidden w-28 shrink-0 md:block">
+                    <button onClick={() => togglePublish(i, p)} className={`w-full rounded px-2 py-1 text-[11px] font-semibold transition-colors ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}>{p.publicado ? "Despublicar" : "Publicar"}</button>
+                  </div>
+
+                  <button onClick={() => togglePublish(i, p)} className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold md:hidden ${p.publicado ? "bg-black/5 text-ink-secondary" : "bg-primary text-ink-cta"}`}>{p.publicado ? "Despub." : "Publicar"}</button>
+
+                  <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-label="Abrir" className="shrink-0 text-ink-muted">{openIdx === i ? "▲" : "▼"}</button>
+                </div>
             {openIdx === i && (
               <div className="space-y-4 border-t border-black/10 p-4">
                 <div className="rounded-lg bg-black/[0.03] p-3">
@@ -588,6 +630,8 @@ function ImoveisTab({ properties, setProperties }) {
               </div>
             )}
           </div>
+              )}
+            </Fragment>
           );
         })}
       </div>
