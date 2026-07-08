@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import PropertyCard from "./PropertyCard";
 
 const SORTS = [
-  { id: "recent", label: "Imóveis mais recentes" },
+  { id: "recent", label: "Ordem do site" },
   { id: "price-asc", label: "Menor preço" },
   { id: "price-desc", label: "Maior preço" },
   { id: "area-desc", label: "Maior área" },

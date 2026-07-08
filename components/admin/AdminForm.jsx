@@ -1024,30 +1024,42 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
   const withIdx = properties.map((p, i) => ({ p, i }));
   const covers = withIdx.filter((x) => x.p.cover);
   const feats = withIdx.filter((x) => x.p.featured);
+  const published = withIdx.filter((x) => x.p.publicado);
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <OrganizerColumn
+          title="🏠 Capa da home"
+          accent="#EFB810"
+          hint="Carrossel grande do topo do site. A ordem aqui é a ordem em que giram. (A foto de capa de cada um é escolhida no editor.)"
+          items={covers}
+          candidates={withIdx.filter((x) => !x.p.cover)}
+          onUp={(k) => moveInSubset("cover", k, -1)}
+          onDown={(k) => moveInSubset("cover", k, 1)}
+          onRemove={(i) => upd(i, { ...properties[i], cover: false })}
+          onAdd={(i) => upd(i, { ...properties[i], cover: true })}
+          onEdit={onEdit}
+        />
+        <OrganizerColumn
+          title="⭐ Destaques"
+          accent="#4f46e5"
+          hint="Seção “Destaques em imóveis” da home. Mostra até 8, na ordem abaixo."
+          items={feats}
+          candidates={withIdx.filter((x) => !x.p.featured)}
+          onUp={(k) => moveInSubset("featured", k, -1)}
+          onDown={(k) => moveInSubset("featured", k, 1)}
+          onRemove={(i) => upd(i, { ...properties[i], featured: false })}
+          onAdd={(i) => upd(i, { ...properties[i], featured: true })}
+          onEdit={onEdit}
+        />
+      </div>
       <OrganizerColumn
-        title="🏠 Capa da home"
-        accent="#EFB810"
-        hint="Carrossel grande do topo do site. A ordem aqui é a ordem em que giram. (A foto de capa de cada um é escolhida no editor.)"
-        items={covers}
-        candidates={withIdx.filter((x) => !x.p.cover)}
-        onUp={(k) => moveInSubset("cover", k, -1)}
-        onDown={(k) => moveInSubset("cover", k, 1)}
-        onRemove={(i) => upd(i, { ...properties[i], cover: false })}
-        onAdd={(i) => upd(i, { ...properties[i], cover: true })}
-        onEdit={onEdit}
-      />
-      <OrganizerColumn
-        title="⭐ Destaques"
-        accent="#4f46e5"
-        hint="Seção “Destaques em imóveis” da home. Mostra até 8, na ordem abaixo."
-        items={feats}
-        candidates={withIdx.filter((x) => !x.p.featured)}
-        onUp={(k) => moveInSubset("featured", k, -1)}
-        onDown={(k) => moveInSubset("featured", k, 1)}
-        onRemove={(i) => upd(i, { ...properties[i], featured: false })}
-        onAdd={(i) => upd(i, { ...properties[i], featured: true })}
+        title="📄 Ordem na listagem do site"
+        accent="#0ea5e9"
+        hint="Ordem em que os imóveis publicados aparecem na página “Imóveis” do site (ordenação padrão). O visitante ainda pode reordenar por preço/área."
+        items={published}
+        onUp={(k) => moveInSubset("publicado", k, -1)}
+        onDown={(k) => moveInSubset("publicado", k, 1)}
         onEdit={onEdit}
       />
     </div>
@@ -1080,18 +1092,20 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
               <div className="truncate text-xs text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}{!p.publicado ? " · rascunho" : ""}</div>
             </div>
             <button onClick={() => onEdit(i)} title="Editar" className="flex h-7 w-7 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
-            <button onClick={() => onRemove(i)} title="Remover daqui" className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-black/5 hover:text-red-600"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+            {onRemove && <button onClick={() => onRemove(i)} title="Remover daqui" className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-black/5 hover:text-red-600"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>}
           </div>
         ))}
       </div>
-      <select
-        value=""
-        onChange={(e) => { const idx = Number(e.target.value); if (e.target.value !== "" && !Number.isNaN(idx)) onAdd(idx); }}
-        className="mt-3 h-10 w-full rounded-lg border border-inputborder px-2 text-sm outline-none focus:border-primary"
-      >
-        <option value="">+ Adicionar imóvel...</option>
-        {candidates.map(({ p, i }) => <option key={p.id || i} value={i}>{p.code} · {p.title || "(sem título)"}</option>)}
-      </select>
+      {onAdd && (
+        <select
+          value=""
+          onChange={(e) => { const idx = Number(e.target.value); if (e.target.value !== "" && !Number.isNaN(idx)) onAdd(idx); }}
+          className="mt-3 h-10 w-full rounded-lg border border-inputborder px-2 text-sm outline-none focus:border-primary"
+        >
+          <option value="">+ Adicionar imóvel...</option>
+          {(candidates || []).map(({ p, i }) => <option key={p.id || i} value={i}>{p.code} · {p.title || "(sem título)"}</option>)}
+        </select>
+      )}
     </div>
   );
 }
