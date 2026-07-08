@@ -70,6 +70,41 @@ function DistribDots({ p }) {
   );
 }
 
+// Três marcos de preenchimento do imóvel, espelhando o fluxo da equipe:
+// 1- Material no Drive · 2- Texto bruto · 3- Ficha do site.
+const STEPS = [
+  { key: "drive", short: "Drive", emoji: "📁", done: (p) => !!(p.driveLinks?.fotos || p.driveLinks?.video) },
+  { key: "texto", short: "Texto", emoji: "✍️", done: (p) => !!(p.textoBruto && p.textoBruto.trim()) },
+  { key: "ficha", short: "Ficha", emoji: "📋", done: (p) => !!(p.title && (p.price > 0 || p.rentPrice > 0) && p.images?.length) },
+];
+function StepDots({ p }) {
+  return (
+    <span className="flex items-center gap-1">
+      {STEPS.map((s) => {
+        const ok = s.done(p);
+        return <span key={s.key} title={`${s.short}${ok ? " ✓" : " pendente"}`} className={`text-[11px] leading-none ${ok ? "" : "opacity-25 grayscale"}`}>{s.emoji}</span>;
+      })}
+    </span>
+  );
+}
+// Valor compacto para os cards (ex.: R$ 1,25 mi · R$ 850 mil).
+function formatBRLShort(n) {
+  const v = Number(n) || 0;
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(v % 1_000_000 === 0 ? 0 : 2).replace(".", ",")} mi`;
+  if (v >= 1_000) return `R$ ${Math.round(v / 1000)} mil`;
+  return v > 0 ? `R$ ${v}` : "";
+}
+// Cabeçalho de etapa dentro do editor.
+function StepHeader({ n, emoji, title, who, done }) {
+  return (
+    <div className="mb-2 flex items-center gap-2">
+      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${done ? "bg-[#4ecb5b] text-white" : "bg-black/10 text-ink-muted"}`}>{done ? "✓" : n}</span>
+      <span className="text-sm font-semibold text-ink">{emoji} {title}</span>
+      {who && <span className="text-xs text-ink-muted">· {who}</span>}
+    </div>
+  );
+}
+
 // Reduz/recomprime imagens que o navegador consegue decodificar (jpeg/png/webp),
 // para caber no limite de upload e carregar rápido no site.
 async function compressImage(file) {
@@ -327,7 +362,7 @@ function emptyProperty(code) {
     city: "São José dos Campos", neighborhood: "", state: "SP",
     price: 0, rentPrice: 0, condo: 0, iptu: 0,
     area: 0, bedrooms: 0, suites: 0, bathrooms: 0, parking: 0,
-    description: "", features: [], condoFeatures: [], images: [], featured: false,
+    description: "", textoBruto: "", features: [], condoFeatures: [], images: [], featured: false,
     // Nasce como rascunho invisível no site, na primeira etapa do funil:
     status: "disponivel", etapa: "captado", publicado: false, responsavel: "",
     condominio: "", andar: 0, mobiliado: false,
@@ -378,47 +413,51 @@ function RespPicker({ value, onChange, team, compact }) {
   );
 }
 
-/* Card do Kanban. */
+/* Card do Kanban — faixa colorida do responsável, título, badges, e progresso (Drive/Texto/Ficha). */
 function KanbanCard({ p, i, active, team, onOpen, onDragStart, onDragEnd, onResp, onMove, canPrev, canNext }) {
-  const hasFotos = !!p.driveLinks?.fotos;
-  const hasVideo = !!p.driveLinks?.video;
+  const member = (team || []).find((t) => t.id === p.responsavel);
+  const accent = member?.color || "#cbd5e1";
+  const priceTxt = p.price > 0 ? formatBRLShort(p.price) : p.rentPrice > 0 ? `${formatBRLShort(p.rentPrice)}/mês` : "";
   return (
     <div
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className={`group cursor-grab rounded-lg border bg-white p-2 shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:shadow-md"} border-black/10`}
+      className={`group overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:-translate-y-px hover:shadow-md"}`}
     >
-      <div className="flex gap-2" role="button" onClick={onOpen}>
-        {p.images?.[0] ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.images[0]} alt="" className="h-11 w-14 shrink-0 rounded object-cover" />
-        ) : (<span className="flex h-11 w-14 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
-        <span className="min-w-0 flex-1">
-          <span className={`block truncate text-[13px] font-medium leading-tight ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel — clique"}</span>
-          <span className="mt-0.5 block truncate text-[11px] text-ink-muted">Cód {p.code} · {p.neighborhood || p.type}</span>
-          <span className="mt-1 flex flex-wrap items-center gap-1">
-            {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
-            {p.publicado && <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>}
-          </span>
-        </span>
+      <div className="flex cursor-pointer" role="button" onClick={onOpen}>
+        <span className="w-1 shrink-0" style={{ background: accent }} aria-hidden />
+        <div className="flex min-w-0 flex-1 gap-2 p-2">
+          {p.images?.[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.images[0]} alt="" className="h-12 w-16 shrink-0 rounded object-cover" />
+          ) : (<span className="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
+          <div className="min-w-0 flex-1">
+            <div className={`truncate text-[13px] font-semibold leading-tight ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel — clique"}</div>
+            <div className="mt-0.5 truncate text-[11px] text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</div>
+            {priceTxt && <div className="mt-0.5 truncate text-[11px] font-semibold text-primary-dark">{priceTxt}</div>}
+            <div className="mt-1 flex flex-wrap items-center gap-1">
+              {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
+              {p.publicado && <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>}
+              {p.cover && <span title="Capa da home" className="text-[11px]">🏠</span>}
+              {p.featured && <span title="Destaque" className="text-[11px]">⭐</span>}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-1">
+      <div className="flex items-center justify-between gap-1 border-t border-black/5 px-2 py-1.5">
         <RespPicker compact team={team} value={p.responsavel} onChange={onResp} />
-        <span className="flex items-center gap-1.5 text-[11px]">
-          <span title={hasFotos ? "Fotos no Drive ✓" : "Sem link de fotos"} className={hasFotos ? "" : "opacity-30 grayscale"}>📷</span>
-          <span title={hasVideo ? "Vídeo no Drive ✓" : "Sem link de vídeo"} className={hasVideo ? "" : "opacity-30 grayscale"}>🎬</span>
-          {p.cover && <span title="Capa da home">🏠</span>}
-          {p.featured && <span title="Destaque">⭐</span>}
-          {p.publicado && <span title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}><DistribDots p={p} /></span>}
+        <span className="flex items-center gap-1.5">
+          <StepDots p={p} />
+          {p.publicado && <><span className="h-3 w-px bg-black/10" /><span title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}><DistribDots p={p} /></span></>}
         </span>
       </div>
 
-      <div className="mt-1.5 flex items-center justify-between opacity-0 transition-opacity group-hover:opacity-100">
-        <button onClick={() => onMove(-1)} disabled={!canPrev} title="Etapa anterior" className="flex h-6 w-7 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25">◄</button>
+      <div className="flex items-center justify-between border-t border-black/5 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <button onClick={() => onMove(-1)} disabled={!canPrev} title="Coluna anterior" className="flex h-6 w-7 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25">◄</button>
         <span className="text-[10px] text-ink-muted">mover</span>
-        <button onClick={() => onMove(1)} disabled={!canNext} title="Próxima etapa" className="flex h-6 w-7 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25">►</button>
+        <button onClick={() => onMove(1)} disabled={!canNext} title="Próxima coluna" className="flex h-6 w-7 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25">►</button>
       </div>
     </div>
   );
@@ -430,22 +469,23 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
   const lastId = funnel[funnel.length - 1]?.id;
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-black/[0.03] p-3">
-        <span className="block text-sm font-semibold text-ink-secondary">Código do imóvel: <span className="text-primary-dark">{p.code}</span></span>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
-            <input type="checkbox" checked={!!p.cover} onChange={(e) => update(i, { ...p, cover: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
-            <span><strong>🏠 Capa da home (topo)</strong><span className="block text-xs text-ink-muted">Aparece no carrossel grande do topo. Marque em 2+ imóveis para girar.</span></span>
-          </label>
-          <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
-            <input type="checkbox" checked={!!p.featured} onChange={(e) => update(i, { ...p, featured: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
-            <span><strong>⭐ Destaque</strong><span className="block text-xs text-ink-muted">Aparece na seção “Destaques em imóveis”, mais abaixo na home.</span></span>
-          </label>
+      {/* Progresso do imóvel (3 marcos: Drive → Texto → Ficha) */}
+      <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 bg-black/[0.02] p-2.5">
+        <span className="text-xs font-semibold text-ink-muted">Cód {p.code}</span>
+        <div className="flex items-center gap-1">
+          {STEPS.map((s, idx) => {
+            const ok = s.done(p);
+            return (
+              <Fragment key={s.key}>
+                {idx > 0 && <span className="h-px w-3 bg-black/10" />}
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${ok ? "bg-[#e8f8ea] text-[#2fa03c]" : "bg-black/5 text-ink-muted"}`}>
+                  <span>{ok ? "✓" : idx + 1}</span>{s.emoji}<span className="hidden sm:inline">{s.short}</span>
+                </span>
+              </Fragment>
+            );
+          })}
         </div>
       </div>
-      {p.cover && (
-        <p className="-mt-2 text-xs text-primary-dark">Este imóvel está na <strong>capa</strong>. Escolha abaixo a <strong>foto de capa</strong> (botão “Definir capa” numa foto). O tempo de troca do carrossel é definido na aba “Capa”.</p>
-      )}
 
       {/* Fluxo de trabalho: responsável + etapa + situação */}
       <div className="rounded-lg border border-black/10 bg-white p-3">
@@ -462,6 +502,46 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
           <input type="checkbox" checked={!!p.publicado} onChange={(e) => update(i, { ...p, publicado: e.target.checked, etapa: e.target.checked ? lastId : p.etapa })} className="mt-0.5 h-4 w-4 accent-primary" />
           <span><strong>{p.publicado ? "✅ Publicado no site" : "📝 Rascunho (não aparece no site)"}</strong><span className="block text-xs text-ink-muted">Desmarcado, o imóvel existe só aqui no painel. Marque para exibir na home e na listagem.</span></span>
         </label>
+      </div>
+
+      {/* Passo 1 — Material no Drive */}
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <StepHeader n={1} emoji="📁" title="Material no Drive" who="fotos e vídeo" done={STEPS[0].done(p)} />
+        <p className="mb-2 text-xs text-ink-muted">Cole os links do Drive das fotos e do vídeo deste imóvel.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DriveLinkField label="Link da pasta de fotos (Drive)" value={p.driveLinks?.fotos} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), fotos: v } })} />
+          <DriveLinkField label="Link do vídeo (Drive)" value={p.driveLinks?.video} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), video: v } })} />
+        </div>
+      </div>
+
+      {/* Passo 2 — Texto bruto */}
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <StepHeader n={2} emoji="✍️" title="Texto bruto" who="descrição crua do imóvel" done={STEPS[1].done(p)} />
+        <p className="mb-2 text-xs text-ink-muted">A descrição do jeito cru (a Paula escreve). Depois esse texto vira a ficha do site abaixo — ex.: passando por uma IA para extrair os campos.</p>
+        <TextArea label="" value={p.textoBruto} onChange={(v) => update(i, { ...p, textoBruto: v })} />
+      </div>
+
+      {/* Passo 3 — Ficha do site */}
+      <div className="rounded-lg border border-primary/40 bg-primary/[0.05] p-3">
+        <StepHeader n={3} emoji="📋" title="Ficha do site" who="o que aparece publicado" done={STEPS[2].done(p)} />
+        <p className="text-xs text-ink-muted">Preencha os campos abaixo — é exatamente o que vai aparecer na página do imóvel.</p>
+      </div>
+
+      {/* Capa / destaque na home */}
+      <div className="rounded-lg bg-black/[0.03] p-3">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
+            <input type="checkbox" checked={!!p.cover} onChange={(e) => update(i, { ...p, cover: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
+            <span><strong>🏠 Capa da home (topo)</strong><span className="block text-xs text-ink-muted">Aparece no carrossel grande do topo. Marque em 2+ imóveis para girar.</span></span>
+          </label>
+          <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
+            <input type="checkbox" checked={!!p.featured} onChange={(e) => update(i, { ...p, featured: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
+            <span><strong>⭐ Destaque</strong><span className="block text-xs text-ink-muted">Aparece na seção “Destaques em imóveis”, mais abaixo na home.</span></span>
+          </label>
+        </div>
+        {p.cover && (
+          <p className="mt-2 text-xs text-primary-dark">Este imóvel está na <strong>capa</strong>. Escolha a <strong>foto de capa</strong> nas imagens (botão “Definir capa”). O tempo do carrossel fica na aba “Capa”.</p>
+        )}
       </div>
 
       <Field label="Título" value={p.title} onChange={(v) => update(i, { ...p, title: v })} placeholder="Ex: Casa à venda em SJC no bairro Urbanova - 4 quartos" />
@@ -536,15 +616,7 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
       </div>
 
       <div className="rounded-lg border border-black/10 bg-white p-3">
-        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Material (Drive)</span>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <DriveLinkField label="Link da pasta de fotos (Drive)" value={p.driveLinks?.fotos} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), fotos: v } })} />
-          <DriveLinkField label="Link do vídeo (Drive)" value={p.driveLinks?.video} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), video: v } })} />
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-black/10 bg-white p-3">
-        <span className="mb-1 block text-sm font-semibold text-ink-secondary">Divulgação <span className="font-normal text-ink-muted">({distribCount(p)}/{DISTRIBUICAO_ITENS.length}) · Pedro</span></span>
+        <span className="mb-1 block text-sm font-semibold text-ink-secondary">Divulgação <span className="font-normal text-ink-muted">({distribCount(p)}/{DISTRIBUICAO_ITENS.length})</span></span>
         <p className="mb-2 text-xs text-ink-muted">Marque conforme for postando/anunciando.</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {DISTRIBUICAO_ITENS.map((it) => (
@@ -573,6 +645,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   const [showMigrate, setShowMigrate] = useState(false);
   const [dragIdx, setDragIdx] = useState(null);
   const [overCol, setOverCol] = useState(null);
+  const [quickAdd, setQuickAdd] = useState(null);
 
   // Equipe e funil configuráveis (vêm do content; caem no fallback se vazios).
   const team = data?.team?.length ? data.team : DEFAULT_TEAM;
@@ -638,9 +711,26 @@ function ImoveisTab({ properties, setProperties, data }) {
   }
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
   function add() {
+    // Entrada rápida: infos básicas + link do Drive (o resto preenche depois, por etapa).
+    setQuickAdd({ title: "", type: "Apartamento", neighborhood: "", city: "São José dos Campos", driveFotos: "", driveVideo: "" });
+  }
+  function createFromQuick() {
+    const qa = quickAdd;
+    if (!qa) return;
     const code = nextCode(properties);
     const owner = funnel[0]?.owner || "";
-    setProperties([{ ...emptyProperty(code), etapa: firstId, responsavel: owner }, ...properties]);
+    const np = {
+      ...emptyProperty(code),
+      etapa: firstId,
+      responsavel: owner,
+      title: qa.title || "",
+      type: qa.type || "Apartamento",
+      neighborhood: qa.neighborhood || "",
+      city: qa.city || "",
+      driveLinks: { fotos: qa.driveFotos || "", video: qa.driveVideo || "" },
+    };
+    setProperties([np, ...properties]);
+    setQuickAdd(null);
     setOpenIdx(0);
   }
   function move(i, dir) {
@@ -824,7 +914,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                             {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
                             <ResponsavelChip member={teamBy[p.responsavel]} size="xs" />
                             <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "—"}</span>
-                            {p.publicado && <span className="text-[10px] text-ink-muted">Divulg {distribCount(p)}/{DISTRIBUICAO_ITENS.length}</span>}
+                            <StepDots p={p} />
                           </span>
                         </span>
                       </button>
@@ -833,6 +923,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                       <div className="hidden w-24 shrink-0 md:block">{p.status && p.status !== "disponivel" ? <StatusBadge status={p.status} /> : <span className="text-xs text-ink-muted">—</span>}</div>
                       <div className="hidden w-32 shrink-0 md:block">{teamBy[p.responsavel] ? <ResponsavelChip member={teamBy[p.responsavel]} size="xs" /> : <span className="text-xs text-ink-muted">—</span>}</div>
                       <div className="hidden w-28 shrink-0 md:block"><span className="rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "—"}</span></div>
+                      <div className="hidden w-14 shrink-0 md:block" title="Progresso: Drive · Texto · Ficha"><StepDots p={p} /></div>
                       <div className="hidden w-16 shrink-0 md:block" title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}>{p.publicado ? <DistribDots p={p} /> : <span className="text-xs text-ink-muted">—</span>}</div>
                       <div className="hidden w-12 shrink-0 items-center gap-1 text-sm md:flex">
                         {p.cover && <span title="Capa da home">🏠</span>}
@@ -869,6 +960,33 @@ function ImoveisTab({ properties, setProperties, data }) {
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <PropertyEditor p={properties[openIdx]} i={openIdx} update={update} remove={remove} team={team} funnel={funnel} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Entrada rápida de imóvel (infos básicas + Drive) */}
+      {quickAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setQuickAdd(null)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-1 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-ink">Novo imóvel — entrada rápida</h3>
+              <button onClick={() => setQuickAdd(null)} className="rounded-lg px-2 py-1 text-sm text-ink-secondary hover:bg-black/5">✕</button>
+            </div>
+            <p className="mb-4 text-xs text-ink-muted">Só o básico para começar. O texto e a ficha completa você preenche depois, avançando as etapas.</p>
+            <div className="space-y-3">
+              <Field label="Título (opcional)" value={quickAdd.title} onChange={(v) => setQuickAdd({ ...quickAdd, title: v })} placeholder="Ex: Apartamento no Jardim Aquarius" />
+              <div className="grid grid-cols-2 gap-3">
+                <SelectField label="Tipo" value={quickAdd.type} options={TYPES} onChange={(v) => setQuickAdd({ ...quickAdd, type: v })} />
+                <Field label="Bairro" value={quickAdd.neighborhood} onChange={(v) => setQuickAdd({ ...quickAdd, neighborhood: v })} />
+              </div>
+              <Field label="Cidade" value={quickAdd.city} onChange={(v) => setQuickAdd({ ...quickAdd, city: v })} />
+              <DriveLinkField label="Link da pasta de fotos (Drive)" value={quickAdd.driveFotos} onChange={(v) => setQuickAdd({ ...quickAdd, driveFotos: v })} />
+              <DriveLinkField label="Link do vídeo (Drive) — opcional" value={quickAdd.driveVideo} onChange={(v) => setQuickAdd({ ...quickAdd, driveVideo: v })} />
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button onClick={() => setQuickAdd(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-ink-secondary hover:bg-black/5">Cancelar</button>
+              <button onClick={createFromQuick} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Criar imóvel</button>
             </div>
           </div>
         </div>
