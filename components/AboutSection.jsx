@@ -1,5 +1,5 @@
 export default function AboutSection({ about = {}, contact = {} }) {
-  const wa = `https://wa.me/${contact.whatsapp || ""}?text=Ol%C3%A1%20Paula%2C%20gostaria%20de%20falar%20sobre%20um%20im%C3%B3vel`;
+  const wa = `https://wa.me/${contact.whatsapp || ""}?text=${encodeURIComponent(contact.whatsappMessage || "Olá, gostaria de falar sobre um imóvel.")}`;
   const highlights = about.highlights || [];
 
   return (
@@ -9,7 +9,7 @@ export default function AboutSection({ about = {}, contact = {} }) {
           <div className="absolute -bottom-4 -right-4 -z-0 h-full w-full rounded-2xl bg-primary/20" aria-hidden />
           <img
             src={about.photo}
-            alt="Paula Regina, corretora de imóveis"
+            alt={about.eyebrow || "Foto"}
             className="relative z-10 h-[380px] w-[300px] rounded-2xl object-cover object-top shadow-lg md:h-[440px] md:w-[340px]"
           />
         </div>
@@ -38,7 +38,7 @@ export default function AboutSection({ about = {}, contact = {} }) {
             rel="noopener noreferrer"
             className="mt-3 inline-flex w-full max-w-cta items-center justify-center gap-2 self-center rounded-pill bg-primary px-3 py-[11px] text-base font-medium text-ink-cta transition-colors hover:bg-primary-hover md:self-start"
           >
-            {about.buttonText || "Falar com a Paula"}
+            {about.buttonText || "Fale conosco"}
           </a>
         </div>
       </div>

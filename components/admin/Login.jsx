@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function Login() {
+export default function Login({ brand = {} }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,7 @@ export default function Login() {
       >
         <div className="mb-6 text-center">
           <div className="font-poppins text-2xl font-semibold text-ink">
-            Paula <span className="text-primary-dark">Regina</span>
+            {brand.name || "Painel"} {brand.nameHighlight && <span className="text-primary-dark">{brand.nameHighlight}</span>}
           </div>
           <p className="mt-1 text-sm text-ink-muted">Painel de administração</p>
         </div>

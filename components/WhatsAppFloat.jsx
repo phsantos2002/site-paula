@@ -1,5 +1,6 @@
 export default function WhatsAppFloat({ contact = {} }) {
-  const wa = `https://wa.me/${contact.whatsapp || ""}?text=Ol%C3%A1%20Paula%2C%20gostaria%20de%20falar%20sobre%20um%20im%C3%B3vel`;
+  const msg = contact.whatsappMessage || "Olá, gostaria de falar sobre um imóvel.";
+  const wa = `https://wa.me/${contact.whatsapp || ""}?text=${encodeURIComponent(msg)}`;
   return (
     <a
       href={wa}

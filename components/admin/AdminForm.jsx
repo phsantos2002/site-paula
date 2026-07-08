@@ -6,6 +6,7 @@ import StatusBadge from "../StatusBadge";
 const TABS = [
   { id: "contatos", label: "Contatos", icon: "M22 5H2v14h20zM2 6l10 7 10-7" },
   { id: "imoveis", label: "Imóveis", icon: "M3 11l9-8 9 8M5 9.5V21h14V9.5" },
+  { id: "equipe", label: "Equipe & Funil", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
   { id: "capa", label: "Capa", icon: "M3 4h18v16H3zM3 16l5-5 4 4 3-3 6 6M8 9a1 1 0 1 0 0 .01" },
   { id: "marca", label: "Marca & Cores", icon: "M20.6 12.6 12 4H4v8l8.6 8.6a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8zM7.5 7.5h.01" },
   { id: "menu", label: "Menu & Contato", icon: "M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z" },
@@ -23,17 +24,28 @@ const STATUS_OPTIONS = [
   { value: "vendido", label: "Vendido" },
   { value: "alugado", label: "Alugado" },
 ];
-const ETAPA_OPTIONS = [
-  { value: "captado", label: "1 · Captado" },
-  { value: "fotos_drive", label: "2 · Fotos no Drive" },
-  { value: "infos", label: "3 · Infos com a Paula" },
-  { value: "no_site", label: "4 · No site" },
+// Equipe e funil vêm do content (editáveis por cliente). Estes são só FALLBACKS,
+// usados quando o content ainda não trouxe nada — o painel nunca fica quebrado.
+const DEFAULT_TEAM = [
+  { id: "captador", name: "Captador", role: "Fotos & Vídeo", emoji: "🎥", color: "#4f46e5" },
+  { id: "corretor", name: "Corretor(a)", role: "Corretagem", emoji: "👤", color: "#db2777" },
+  { id: "gestor", name: "Gestor", role: "Anúncios & Site", emoji: "🧑‍💻", color: "#b7791f" },
 ];
-const ETAPA_LABEL = Object.fromEntries(ETAPA_OPTIONS.map((o) => [o.value, o.label]));
+const DEFAULT_FUNNEL = [
+  { id: "captado", label: "Captação", owner: "captador", hint: "Visita e captação do imóvel" },
+  { id: "fotos_drive", label: "Fotos no Drive", owner: "captador", hint: "Sobe as fotos (mesmo dia)" },
+  { id: "video_editado", label: "Vídeo editado", owner: "captador", hint: "Edita e sobe o vídeo" },
+  { id: "infos", label: "Infos com o corretor", owner: "corretor", hint: "Coleta os dados do imóvel" },
+  { id: "no_site", label: "No site", owner: "gestor", hint: "Publica e divulga" },
+];
+// Estilo do chip derivado da cor do membro (fundo/borda em transparência do próprio hex).
+function memberStyle(m) {
+  const col = (m && m.color) || "#6b7280";
+  return { color: col, background: col + "1a", ring: col + "55" };
+}
 
-// Checklist de distribuição (marketing) — interno ao painel.
+// Checklist de divulgação (marketing do gestor) — interno ao painel.
 const DISTRIBUICAO_ITENS = [
-  { key: "videoEditado", label: "Vídeo editado (Drive)" },
   { key: "carrossel", label: "Carrossel (Instagram)" },
   { key: "reels", label: "Reels (Instagram)" },
   { key: "anuncio", label: "Anúncio (Meta Ads)" },
@@ -201,7 +213,8 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
 
         <div className="min-w-0 flex-1 space-y-6">
           {tab === "contatos" && <ContatosTab leads={leads} setLeads={setLeads} />}
-          {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setProperties} />}
+          {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setProperties} data={data} />}
+          {tab === "equipe" && <EquipeTab data={data} setSection={setSection} />}
           {tab === "capa" && <CapaTab data={data} patch={patch} />}
           {tab === "marca" && <MarcaTab data={data} patch={patch} />}
           {tab === "menu" && <MenuTab data={data} patch={patch} setSection={setSection} />}
@@ -308,13 +321,13 @@ function emptyProperty(code) {
     price: 0, rentPrice: 0, condo: 0, iptu: 0,
     area: 0, bedrooms: 0, suites: 0, bathrooms: 0, parking: 0,
     description: "", features: [], condoFeatures: [], images: [], featured: false,
-    // Nasce como rascunho invisível no site (captação):
-    status: "disponivel", etapa: "captado", publicado: false,
+    // Nasce como rascunho invisível no site, na primeira etapa do funil:
+    status: "disponivel", etapa: "captado", publicado: false, responsavel: "",
     condominio: "", andar: 0, mobiliado: false,
     proprietario: { nome: "", contato: "", exclusividade: false },
     captacao: { data: "", capturadoPor: "", observacoes: "" },
     driveLinks: { fotos: "", video: "" },
-    distribuicao: { videoEditado: false, carrossel: false, reels: false, anuncio: false },
+    distribuicao: { carrossel: false, reels: false, anuncio: false },
   };
 }
 
@@ -322,27 +335,267 @@ const FILTERS = [
   { value: "all", label: "Todos" },
   { value: "rascunhos", label: "Rascunhos" },
   { value: "publicados", label: "Publicados" },
-  ...ETAPA_OPTIONS,
-  { value: "distrib_pendente", label: "Distribuição pendente" },
+  { value: "distrib_pendente", label: "Divulgação pendente" },
 ];
 
-function ImoveisTab({ properties, setProperties }) {
+/* Chip do responsável (só leitura). Recebe o membro já resolvido do time. */
+function ResponsavelChip({ member, size = "sm" }) {
+  if (!member) return <span className="text-[11px] text-ink-muted">— sem responsável</span>;
+  const s = memberStyle(member);
+  const pad = size === "xs" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full font-semibold ${pad}`} style={{ color: s.color, background: s.background, boxShadow: `inset 0 0 0 1px ${s.ring}` }}>
+      <span>{member.emoji}</span>{member.name}
+    </span>
+  );
+}
+
+/* Seletor de responsável (card e editor). `team` = lista de membros do content. */
+function RespPicker({ value, onChange, team, compact }) {
+  const m = (team || []).find((t) => t.id === value);
+  const s = m ? memberStyle(m) : { color: "#6b7280", background: "#f3f4f6", ring: "#e5e7eb" };
+  return (
+    <span className="relative inline-flex">
+      <select
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        className={`cursor-pointer appearance-none rounded-full border-0 font-semibold outline-none ${compact ? "py-1 pl-2 pr-6 text-[11px]" : "h-10 pl-3 pr-8 text-sm"}`}
+        style={{ color: s.color, background: s.background, boxShadow: `inset 0 0 0 1px ${s.ring}` }}
+      >
+        <option value="">👤 Sem responsável</option>
+        {(team || []).map((o) => <option key={o.id} value={o.id}>{o.emoji} {o.name}</option>)}
+      </select>
+      <span className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${compact ? "right-1.5" : "right-2.5"} text-[9px]`} style={{ color: s.color }}>▼</span>
+    </span>
+  );
+}
+
+/* Card do Kanban. */
+function KanbanCard({ p, i, active, team, onOpen, onDragStart, onDragEnd, onResp, onMove, canPrev, canNext }) {
+  const hasFotos = !!p.driveLinks?.fotos;
+  const hasVideo = !!p.driveLinks?.video;
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={`group cursor-grab rounded-lg border bg-white p-2 shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:shadow-md"} border-black/10`}
+    >
+      <div className="flex gap-2" role="button" onClick={onOpen}>
+        {p.images?.[0] ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={p.images[0]} alt="" className="h-11 w-14 shrink-0 rounded object-cover" />
+        ) : (<span className="flex h-11 w-14 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate text-[13px] font-medium leading-tight ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel — clique"}</span>
+          <span className="mt-0.5 block truncate text-[11px] text-ink-muted">Cód {p.code} · {p.neighborhood || p.type}</span>
+          <span className="mt-1 flex flex-wrap items-center gap-1">
+            {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
+            {p.publicado && <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>}
+          </span>
+        </span>
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-1">
+        <RespPicker compact team={team} value={p.responsavel} onChange={onResp} />
+        <span className="flex items-center gap-1.5 text-[11px]">
+          <span title={hasFotos ? "Fotos no Drive ✓" : "Sem link de fotos"} className={hasFotos ? "" : "opacity-30 grayscale"}>📷</span>
+          <span title={hasVideo ? "Vídeo no Drive ✓" : "Sem link de vídeo"} className={hasVideo ? "" : "opacity-30 grayscale"}>🎬</span>
+          {p.cover && <span title="Capa da home">🏠</span>}
+          {p.featured && <span title="Destaque">⭐</span>}
+          {p.publicado && <span title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}><DistribDots p={p} /></span>}
+        </span>
+      </div>
+
+      <div className="mt-1.5 flex items-center justify-between opacity-0 transition-opacity group-hover:opacity-100">
+        <button onClick={() => onMove(-1)} disabled={!canPrev} title="Etapa anterior" className="flex h-6 w-7 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25">◄</button>
+        <span className="text-[10px] text-ink-muted">mover</span>
+        <button onClick={() => onMove(1)} disabled={!canNext} title="Próxima etapa" className="flex h-6 w-7 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25">►</button>
+      </div>
+    </div>
+  );
+}
+
+/* Editor completo do imóvel (compartilhado entre Kanban e Lista). */
+function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DEFAULT_FUNNEL }) {
+  const etapaOptions = funnel.map((f) => ({ value: f.id, label: f.label }));
+  const lastId = funnel[funnel.length - 1]?.id;
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg bg-black/[0.03] p-3">
+        <span className="block text-sm font-semibold text-ink-secondary">Código do imóvel: <span className="text-primary-dark">{p.code}</span></span>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
+            <input type="checkbox" checked={!!p.cover} onChange={(e) => update(i, { ...p, cover: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
+            <span><strong>🏠 Capa da home (topo)</strong><span className="block text-xs text-ink-muted">Aparece no carrossel grande do topo. Marque em 2+ imóveis para girar.</span></span>
+          </label>
+          <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
+            <input type="checkbox" checked={!!p.featured} onChange={(e) => update(i, { ...p, featured: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
+            <span><strong>⭐ Destaque</strong><span className="block text-xs text-ink-muted">Aparece na seção “Destaques em imóveis”, mais abaixo na home.</span></span>
+          </label>
+        </div>
+      </div>
+      {p.cover && (
+        <p className="-mt-2 text-xs text-primary-dark">Este imóvel está na <strong>capa</strong>. Escolha abaixo a <strong>foto de capa</strong> (botão “Definir capa” numa foto). O tempo de troca do carrossel é definido na aba “Capa”.</p>
+      )}
+
+      {/* Fluxo de trabalho: responsável + etapa + situação */}
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Fluxo de trabalho</span>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-ink-secondary">Responsável agora</span>
+            <RespPicker team={team} value={p.responsavel} onChange={(v) => update(i, { ...p, responsavel: v })} />
+          </label>
+          <LabeledSelect label="Etapa (funil)" value={p.etapa || etapaOptions[0]?.value} options={etapaOptions} onChange={(v) => update(i, { ...p, etapa: v, publicado: v === lastId ? p.publicado : false })} />
+          <LabeledSelect label="Situação (badge no site)" value={p.status || "disponivel"} options={STATUS_OPTIONS} onChange={(v) => update(i, { ...p, status: v })} />
+        </div>
+        <label className="mt-3 flex items-start gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
+          <input type="checkbox" checked={!!p.publicado} onChange={(e) => update(i, { ...p, publicado: e.target.checked, etapa: e.target.checked ? lastId : p.etapa })} className="mt-0.5 h-4 w-4 accent-primary" />
+          <span><strong>{p.publicado ? "✅ Publicado no site" : "📝 Rascunho (não aparece no site)"}</strong><span className="block text-xs text-ink-muted">Desmarcado, o imóvel existe só aqui no painel. Marque para exibir na home e na listagem.</span></span>
+        </label>
+      </div>
+
+      <Field label="Título" value={p.title} onChange={(v) => update(i, { ...p, title: v })} placeholder="Ex: Casa à venda em SJC no bairro Urbanova - 4 quartos" />
+      <div className="grid grid-cols-2 gap-3">
+        <SelectField label="Tipo" value={p.type} options={TYPES} onChange={(v) => update(i, { ...p, type: v })} />
+        <div>
+          <span className="mb-1 block text-sm font-medium text-ink-secondary">Operação</span>
+          <div className="flex flex-wrap gap-3 pt-1">
+            {OPERATIONS.map((op) => (
+              <label key={op} className="flex items-center gap-1.5 text-sm text-ink-secondary">
+                <input type="checkbox" checked={(p.operation || []).includes(op)} onChange={(e) => { const set = new Set(p.operation || []); e.target.checked ? set.add(op) : set.delete(op); update(i, { ...p, operation: [...set] }); }} className="h-4 w-4 accent-primary" />
+                {op}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <Field label="Cidade" value={p.city} onChange={(v) => update(i, { ...p, city: v })} />
+        <Field label="Bairro" value={p.neighborhood} onChange={(v) => update(i, { ...p, neighborhood: v })} />
+        <Field label="UF" value={p.state} onChange={(v) => update(i, { ...p, state: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <NumberField label="Valor venda (R$)" value={p.price} onChange={(v) => update(i, { ...p, price: v })} />
+        <NumberField label="Valor aluguel (R$)" value={p.rentPrice} onChange={(v) => update(i, { ...p, rentPrice: v })} />
+        <NumberField label="Condomínio (R$)" value={p.condo} onChange={(v) => update(i, { ...p, condo: v })} />
+        <NumberField label="IPTU (R$)" value={p.iptu} onChange={(v) => update(i, { ...p, iptu: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <NumberField label="Área (m²)" value={p.area} onChange={(v) => update(i, { ...p, area: v })} />
+        <NumberField label="Dormitórios" value={p.bedrooms} onChange={(v) => update(i, { ...p, bedrooms: v })} />
+        <NumberField label="Suítes" value={p.suites} onChange={(v) => update(i, { ...p, suites: v })} />
+        <NumberField label="Banheiros" value={p.bathrooms} onChange={(v) => update(i, { ...p, bathrooms: v })} />
+        <NumberField label="Vagas" value={p.parking} onChange={(v) => update(i, { ...p, parking: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Field label="Condomínio (nome)" value={p.condominio} onChange={(v) => update(i, { ...p, condominio: v })} />
+        <NumberField label="Andar" value={p.andar} onChange={(v) => update(i, { ...p, andar: v })} />
+        <label className="flex items-center gap-2 self-end pb-2.5 text-sm text-ink-secondary">
+          <input type="checkbox" checked={!!p.mobiliado} onChange={(e) => update(i, { ...p, mobiliado: e.target.checked })} className="h-4 w-4 accent-primary" />
+          Mobiliado
+        </label>
+      </div>
+      <TextArea label="Descrição (Sobre o imóvel)" value={p.description} onChange={(v) => update(i, { ...p, description: v })} />
+      <TextArea label="Instalações do imóvel (uma por linha)" value={(p.features || []).join("\n")} onChange={(v) => update(i, { ...p, features: linesToArray(v) })} />
+      <TextArea label="Instalações do condomínio (uma por linha)" value={(p.condoFeatures || []).join("\n")} onChange={(v) => update(i, { ...p, condoFeatures: linesToArray(v) })} />
+
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Proprietário</span>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Nome" value={p.proprietario?.nome} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), nome: v } })} />
+          <Field label="Contato (telefone/WhatsApp)" value={p.proprietario?.contato} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), contato: v } })} />
+        </div>
+        <label className="mt-3 flex items-center gap-2 text-sm text-ink-secondary">
+          <input type="checkbox" checked={!!p.proprietario?.exclusividade} onChange={(e) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), exclusividade: e.target.checked } })} className="h-4 w-4 accent-primary" />
+          Contrato de exclusividade com o corretor
+        </label>
+      </div>
+
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Captação</span>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-ink-secondary">Data da captação</span>
+            <input type="date" value={p.captacao?.data || ""} onChange={(e) => update(i, { ...p, captacao: { ...(p.captacao || {}), data: e.target.value } })} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary" />
+          </label>
+          <Field label="Capturado por" value={p.captacao?.capturadoPor} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), capturadoPor: v } })} placeholder="Ex: Guilherme" />
+        </div>
+        <div className="mt-3">
+          <TextArea label="Observações da captação" value={p.captacao?.observacoes} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), observacoes: v } })} />
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Material (Drive)</span>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DriveLinkField label="Link da pasta de fotos (Drive)" value={p.driveLinks?.fotos} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), fotos: v } })} />
+          <DriveLinkField label="Link do vídeo (Drive)" value={p.driveLinks?.video} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), video: v } })} />
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <span className="mb-1 block text-sm font-semibold text-ink-secondary">Divulgação <span className="font-normal text-ink-muted">({distribCount(p)}/{DISTRIBUICAO_ITENS.length}) · Pedro</span></span>
+        <p className="mb-2 text-xs text-ink-muted">Marque conforme for postando/anunciando.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {DISTRIBUICAO_ITENS.map((it) => (
+            <label key={it.key} className="flex items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
+              <input type="checkbox" checked={!!p.distribuicao?.[it.key]} onChange={(e) => update(i, { ...p, distribuicao: { ...(p.distribuicao || {}), [it.key]: e.target.checked } })} className="h-4 w-4 accent-primary" />
+              {it.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <MultiImageField images={p.images || []} onChange={(imgs) => update(i, { ...p, images: imgs })} coverImage={p.coverImage} showCover={!!p.cover} onSetCover={(src) => update(i, { ...p, coverImage: src })} />
+      <button onClick={() => remove(i)} className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Excluir imóvel</button>
+    </div>
+  );
+}
+
+function ImoveisTab({ properties, setProperties, data }) {
   const [openIdx, setOpenIdx] = useState(null);
   const [migrating, setMigrating] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [respFilter, setRespFilter] = useState("");
   const [query, setQuery] = useState("");
+  const [view, setView] = useState("funil");
   const [collapsed, setCollapsed] = useState({});
   const [showMigrate, setShowMigrate] = useState(false);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [overCol, setOverCol] = useState(null);
+
+  // Equipe e funil configuráveis (vêm do content; caem no fallback se vazios).
+  const team = data?.team?.length ? data.team : DEFAULT_TEAM;
+  const funnel = data?.funnel?.length ? data.funnel : DEFAULT_FUNNEL;
+  const teamBy = Object.fromEntries(team.map((t) => [t.id, t]));
+  const etapaValues = funnel.map((f) => f.id);
+  const etapaLabel = Object.fromEntries(funnel.map((f) => [f.id, f.label]));
+  const firstId = etapaValues[0];
+  const lastId = etapaValues[etapaValues.length - 1];
+  // Em qual coluna o imóvel aparece: publicado => última etapa; senão a etapa (ou a 1ª).
+  function columnOf(p) {
+    if (p.publicado) return lastId;
+    return etapaValues.includes(p.etapa) ? p.etapa : firstId;
+  }
+
   function isVisible(p) {
-    if (filter === "all") return true;
+    if (respFilter && p.responsavel !== respFilter) return false;
     if (filter === "rascunhos") return !p.publicado;
     if (filter === "publicados") return !!p.publicado;
     if (filter === "distrib_pendente") return !!p.publicado && DISTRIBUICAO_ITENS.some((it) => !p.distribuicao?.[it.key]);
-    return (p.etapa || "captado") === filter;
+    return true;
   }
   function togglePublish(i, p) {
-    // Ao publicar, avança a etapa para "No site" automaticamente.
-    update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? "no_site" : p.etapa });
+    // Ao publicar, avança para a última etapa; ao despublicar, mantém a etapa.
+    update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? lastId : p.etapa });
+  }
+  function moveToEtapa(i, etapa) {
+    // Arrastar no Kanban: a última coluna publica; sair dela vira rascunho.
+    const p = properties[i];
+    update(i, { ...p, etapa, publicado: etapa === lastId });
   }
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
   async function migrateStatus() {
@@ -363,7 +616,12 @@ function ImoveisTab({ properties, setProperties }) {
     setMigrating(false);
   }
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
-  function add() { const code = nextCode(properties); setProperties([emptyProperty(code), ...properties]); setOpenIdx(0); }
+  function add() {
+    const code = nextCode(properties);
+    const owner = funnel[0]?.owner || "";
+    setProperties([{ ...emptyProperty(code), etapa: firstId, responsavel: owner }, ...properties]);
+    setOpenIdx(0);
+  }
   function move(i, dir) {
     const j = i + dir;
     if (j < 0 || j >= properties.length) return;
@@ -374,42 +632,56 @@ function ImoveisTab({ properties, setProperties }) {
     else if (openIdx === j) setOpenIdx(i);
   }
 
-  // Reordenar só faz sentido na lista completa (define a ordem da capa/destaques na home).
-  const showReorder = filter === "all" && !query.trim();
+  // Reordenar só faz sentido na Lista completa (define a ordem da capa/destaques na home).
+  const showReorder = view === "lista" && filter === "all" && !respFilter && !query.trim();
   const q = query.trim().toLowerCase();
   const matchesQuery = (p) => !q || `${p.title} ${p.code} ${p.neighborhood} ${p.city}`.toLowerCase().includes(q);
   const rows = properties.map((p, i) => ({ p, i })).filter(({ p }) => isVisible(p) && matchesQuery(p));
   const rascunhos = rows.filter(({ p }) => !p.publicado);
   const noSite = rows.filter(({ p }) => p.publicado);
   const ordered = [...rascunhos.map((r) => ({ ...r, g: "rascunho" })), ...noSite.map((r) => ({ ...r, g: "nosite" }))];
+  const respCounts = team.reduce((a, r) => { a[r.id] = properties.filter((p) => p.responsavel === r.id).length; return a; }, {});
 
   return (
     <Card title={`Imóveis cadastrados (${properties.length})`}>
-      {/* Cadastrar + busca */}
+      {/* Cadastrar + busca + visão */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button onClick={add} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">+ Cadastrar novo imóvel</button>
         <div className="relative min-w-[200px] flex-1">
           <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar código, título ou bairro" className="h-10 w-full rounded-lg border border-inputborder pl-9 pr-3 text-sm outline-none focus:border-primary" />
         </div>
+        <div className="flex overflow-hidden rounded-lg border border-black/10">
+          <button onClick={() => setView("funil")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "funil" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>▚ Funil</button>
+          <button onClick={() => setView("lista")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "lista" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>☰ Lista</button>
+        </div>
       </div>
 
-      {/* Filtros + manutenção */}
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      {/* Filtros de estado + manutenção */}
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
         {FILTERS.map((f) => {
           const active = filter === f.value;
           return (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-ink text-white" : "bg-black/5 text-ink-secondary hover:bg-black/10"}`}
-            >
-              {f.label}
-            </button>
+            <button key={f.value} onClick={() => setFilter(f.value)} className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-ink text-white" : "bg-black/5 text-ink-secondary hover:bg-black/10"}`}>{f.label}</button>
           );
         })}
         <span className="ml-1 text-xs text-ink-muted">{rows.length} de {properties.length}</span>
         <button onClick={() => setShowMigrate((s) => !s)} className="ml-auto text-xs text-ink-muted underline hover:text-ink-secondary">Manutenção</button>
+      </div>
+
+      {/* Filtro por pessoa da equipe */}
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 text-xs font-medium text-ink-muted">Responsável:</span>
+        <button onClick={() => setRespFilter("")} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${respFilter === "" ? "bg-ink text-white" : "bg-black/5 text-ink-secondary hover:bg-black/10"}`}>Todos</button>
+        {team.map((r) => {
+          const on = respFilter === r.id;
+          const s = memberStyle(r);
+          return (
+            <button key={r.id} onClick={() => setRespFilter(on ? "" : r.id)} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors" style={on ? { color: "#fff", background: s.color } : { color: s.color, background: s.background, boxShadow: `inset 0 0 0 1px ${s.ring}` }}>
+              <span>{r.emoji}</span>{r.name}<span className="opacity-60">{respCounts[r.id]}</span>
+            </button>
+          );
+        })}
       </div>
 
       {showMigrate && (
@@ -421,221 +693,242 @@ function ImoveisTab({ properties, setProperties }) {
         </div>
       )}
 
-      <div className="space-y-3">
-        {rows.length === 0 && (
-          <div className="rounded-lg border border-dashed border-ink-muted p-8 text-center text-sm text-ink-muted">
-            Nenhum imóvel neste filtro/busca.
-          </div>
-        )}
-        {ordered.map((row, k) => {
-          const { p, i, g } = row;
-          const firstOfGroup = k === 0 || ordered[k - 1].g !== g;
-          const groupCount = g === "rascunho" ? rascunhos.length : noSite.length;
-          const isOpen = !collapsed[g];
-          return (
-            <Fragment key={p.id || i}>
-              {firstOfGroup && (
-                <button type="button" onClick={() => setCollapsed((c) => ({ ...c, [g]: !c[g] }))} className="mt-2 flex w-full items-center gap-2 px-1 py-1 text-left first:mt-0">
-                  <span className="text-ink-muted">{isOpen ? "▾" : "▸"}</span>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">{g === "rascunho" ? "Rascunhos · em produção" : "No site"}</span>
-                  <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{groupCount}</span>
-                </button>
-              )}
-              {isOpen && (
-              <div className={`group rounded-lg border border-black/10 bg-white border-l-4 ${p.publicado ? "border-l-[#4ecb5b]" : "border-l-[#ffa200]"}`}>
-                <div className="flex w-full items-center gap-2 px-3 py-2.5 md:gap-3 md:px-4">
-                  {showReorder && (
-                    <div className="flex flex-col md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
-                      <button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Mover para cima" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg>
-                      </button>
-                      <button onClick={() => move(i, 1)} disabled={i === properties.length - 1} aria-label="Mover para baixo" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
-                      </button>
+      {view === "funil" ? (
+        /* ===== KANBAN (funil de produção) ===== */
+        <>
+          <p className="mb-2 text-xs text-ink-muted">Arraste os cards entre as colunas para mudar a etapa · use as setas ◄ ► · clique num card para editar.</p>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {funnel.map((col, idx) => {
+              const owner = teamBy[col.owner];
+              const accent = owner?.color || "#94a3b8";
+              const cards = rows.filter(({ p }) => columnOf(p) === col.id);
+              const isOver = overCol === col.id;
+              const cur = idx;
+              return (
+                <div
+                  key={col.id}
+                  onDragOver={(e) => { e.preventDefault(); if (overCol !== col.id) setOverCol(col.id); }}
+                  onDrop={() => { if (dragIdx != null) moveToEtapa(dragIdx, col.id); setDragIdx(null); setOverCol(null); }}
+                  className={`flex w-[248px] shrink-0 flex-col rounded-xl border transition-colors ${isOver ? "border-primary bg-primary/5" : "border-black/10 bg-black/[0.02]"}`}
+                >
+                  <div className="rounded-t-xl border-t-[3px] px-3 pb-2.5 pt-2" style={{ borderTopColor: accent }}>
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: accent }}>{idx + 1}</span>
+                      <span className="text-[13px] font-semibold text-ink">{col.label}</span>
+                      <span className="ml-auto rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{cards.length}</span>
                     </div>
-                  )}
-
-                  <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                    {p.images?.[0] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.images[0]} alt="" className="h-10 w-14 shrink-0 rounded object-cover" />
-                    ) : (<span className="flex h-10 w-14 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
-                    <span className="min-w-0">
-                      <span className={`block truncate text-sm font-medium ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel — clique para preencher"}</span>
-                      <span className="block truncate text-xs text-ink-muted">Cód: {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
-                      <span className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
-                        {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
-                        <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] text-ink-muted">{ETAPA_LABEL[p.etapa || "captado"]}</span>
-                        {p.publicado && <span className="text-[10px] text-ink-muted">Distrib {distribCount(p)}/{DISTRIBUICAO_ITENS.length}</span>}
-                      </span>
-                    </span>
-                  </button>
-
-                  {/* colunas alinhadas (desktop) */}
-                  <div className="hidden w-24 shrink-0 md:block">{p.status && p.status !== "disponivel" ? <StatusBadge status={p.status} /> : <span className="text-xs text-ink-muted">—</span>}</div>
-                  <div className="hidden w-28 shrink-0 md:block"><span className="rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted">{ETAPA_LABEL[p.etapa || "captado"]}</span></div>
-                  <div className="hidden w-16 shrink-0 md:block" title={`Distribuição ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}>{p.publicado ? <DistribDots p={p} /> : <span className="text-xs text-ink-muted">—</span>}</div>
-                  <div className="hidden w-12 shrink-0 items-center gap-1 text-sm md:flex">
-                    {p.cover && <span title="Capa da home">🏠</span>}
-                    {p.featured && <span title="Destaque">⭐</span>}
+                    <div className="mt-1.5"><ResponsavelChip member={owner} size="xs" /></div>
+                    {col.hint && <p className="mt-1 text-[10px] leading-tight text-ink-muted">{col.hint}</p>}
                   </div>
-                  <div className="hidden w-28 shrink-0 md:block">
-                    <button onClick={() => togglePublish(i, p)} className={`w-full rounded px-2 py-1 text-[11px] font-semibold transition-colors ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}>{p.publicado ? "Despublicar" : "Publicar"}</button>
-                  </div>
-
-                  <button onClick={() => togglePublish(i, p)} className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold md:hidden ${p.publicado ? "bg-black/5 text-ink-secondary" : "bg-primary text-ink-cta"}`}>{p.publicado ? "Despub." : "Publicar"}</button>
-
-                  <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-label="Abrir" className="shrink-0 text-ink-muted">{openIdx === i ? "▲" : "▼"}</button>
-                </div>
-            {openIdx === i && (
-              <div className="space-y-4 border-t border-black/10 p-4">
-                <div className="rounded-lg bg-black/[0.03] p-3">
-                  <span className="block text-sm font-semibold text-ink-secondary">Código do imóvel: <span className="text-primary-dark">{p.code}</span></span>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
-                      <input type="checkbox" checked={!!p.cover} onChange={(e) => update(i, { ...p, cover: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
-                      <span>
-                        <strong>🏠 Capa da home (topo)</strong>
-                        <span className="block text-xs text-ink-muted">Aparece no carrossel grande do topo. Marque em 2+ imóveis para girar.</span>
-                      </span>
-                    </label>
-                    <label className="flex items-start gap-2 rounded-md border border-black/10 bg-white p-2.5 text-sm text-ink-secondary">
-                      <input type="checkbox" checked={!!p.featured} onChange={(e) => update(i, { ...p, featured: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
-                      <span>
-                        <strong>⭐ Destaque</strong>
-                        <span className="block text-xs text-ink-muted">Aparece na seção “Destaques em imóveis”, mais abaixo na home.</span>
-                      </span>
-                    </label>
-                  </div>
-                </div>
-                {p.cover && (
-                  <p className="-mt-2 text-xs text-primary-dark">
-                    Este imóvel está na <strong>capa</strong>. Escolha abaixo a <strong>foto de capa</strong> (botão “Definir capa” numa foto).
-                    O tempo de troca do carrossel é definido na aba “Capa”.
-                  </p>
-                )}
-                {/* Ciclo de vida / publicação */}
-                <div className="rounded-lg border border-black/10 bg-white p-3">
-                  <span className="mb-2 block text-sm font-semibold text-ink-secondary">Situação & Publicação</span>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <LabeledSelect label="Situação (badge no site)" value={p.status || "disponivel"} options={STATUS_OPTIONS} onChange={(v) => update(i, { ...p, status: v })} />
-                    <LabeledSelect label="Etapa (funil interno)" value={p.etapa || "captado"} options={ETAPA_OPTIONS} onChange={(v) => update(i, { ...p, etapa: v })} />
-                  </div>
-                  <label className="mt-3 flex items-start gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
-                    <input type="checkbox" checked={!!p.publicado} onChange={(e) => update(i, { ...p, publicado: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
-                    <span>
-                      <strong>{p.publicado ? "✅ Publicado no site" : "📝 Rascunho (não aparece no site)"}</strong>
-                      <span className="block text-xs text-ink-muted">Desmarcado, o imóvel existe só aqui no painel. Marque para exibir na home e na listagem.</span>
-                    </span>
-                  </label>
-                </div>
-
-                <Field label="Título" value={p.title} onChange={(v) => update(i, { ...p, title: v })} placeholder="Ex: Casa à venda em SJC no bairro Urbanova - 4 quartos" />
-                <div className="grid grid-cols-2 gap-3">
-                  <SelectField label="Tipo" value={p.type} options={TYPES} onChange={(v) => update(i, { ...p, type: v })} />
-                  <div>
-                    <span className="mb-1 block text-sm font-medium text-ink-secondary">Operação</span>
-                    <div className="flex flex-wrap gap-3 pt-1">
-                      {OPERATIONS.map((op) => (
-                        <label key={op} className="flex items-center gap-1.5 text-sm text-ink-secondary">
-                          <input type="checkbox" checked={(p.operation || []).includes(op)} onChange={(e) => { const set = new Set(p.operation || []); e.target.checked ? set.add(op) : set.delete(op); update(i, { ...p, operation: [...set] }); }} className="h-4 w-4 accent-primary" />
-                          {op}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                  <Field label="Cidade" value={p.city} onChange={(v) => update(i, { ...p, city: v })} />
-                  <Field label="Bairro" value={p.neighborhood} onChange={(v) => update(i, { ...p, neighborhood: v })} />
-                  <Field label="UF" value={p.state} onChange={(v) => update(i, { ...p, state: v })} />
-                </div>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <NumberField label="Valor venda (R$)" value={p.price} onChange={(v) => update(i, { ...p, price: v })} />
-                  <NumberField label="Valor aluguel (R$)" value={p.rentPrice} onChange={(v) => update(i, { ...p, rentPrice: v })} />
-                  <NumberField label="Condomínio (R$)" value={p.condo} onChange={(v) => update(i, { ...p, condo: v })} />
-                  <NumberField label="IPTU (R$)" value={p.iptu} onChange={(v) => update(i, { ...p, iptu: v })} />
-                </div>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                  <NumberField label="Área (m²)" value={p.area} onChange={(v) => update(i, { ...p, area: v })} />
-                  <NumberField label="Dormitórios" value={p.bedrooms} onChange={(v) => update(i, { ...p, bedrooms: v })} />
-                  <NumberField label="Suítes" value={p.suites} onChange={(v) => update(i, { ...p, suites: v })} />
-                  <NumberField label="Banheiros" value={p.bathrooms} onChange={(v) => update(i, { ...p, bathrooms: v })} />
-                  <NumberField label="Vagas" value={p.parking} onChange={(v) => update(i, { ...p, parking: v })} />
-                </div>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <Field label="Condomínio (nome)" value={p.condominio} onChange={(v) => update(i, { ...p, condominio: v })} />
-                  <NumberField label="Andar" value={p.andar} onChange={(v) => update(i, { ...p, andar: v })} />
-                  <label className="flex items-center gap-2 self-end pb-2.5 text-sm text-ink-secondary">
-                    <input type="checkbox" checked={!!p.mobiliado} onChange={(e) => update(i, { ...p, mobiliado: e.target.checked })} className="h-4 w-4 accent-primary" />
-                    Mobiliado
-                  </label>
-                </div>
-                <TextArea label="Descrição (Sobre o imóvel)" value={p.description} onChange={(v) => update(i, { ...p, description: v })} />
-                <TextArea label="Instalações do imóvel (uma por linha)" value={(p.features || []).join("\n")} onChange={(v) => update(i, { ...p, features: linesToArray(v) })} />
-                <TextArea label="Instalações do condomínio (uma por linha)" value={(p.condoFeatures || []).join("\n")} onChange={(v) => update(i, { ...p, condoFeatures: linesToArray(v) })} />
-                {/* Proprietário */}
-                <div className="rounded-lg border border-black/10 bg-white p-3">
-                  <span className="mb-2 block text-sm font-semibold text-ink-secondary">Proprietário</span>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label="Nome" value={p.proprietario?.nome} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), nome: v } })} />
-                    <Field label="Contato (telefone/WhatsApp)" value={p.proprietario?.contato} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), contato: v } })} />
-                  </div>
-                  <label className="mt-3 flex items-center gap-2 text-sm text-ink-secondary">
-                    <input type="checkbox" checked={!!p.proprietario?.exclusividade} onChange={(e) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), exclusividade: e.target.checked } })} className="h-4 w-4 accent-primary" />
-                    Contrato de exclusividade com a Paula
-                  </label>
-                </div>
-
-                {/* Captação (campo) */}
-                <div className="rounded-lg border border-black/10 bg-white p-3">
-                  <span className="mb-2 block text-sm font-semibold text-ink-secondary">Captação</span>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-1 block text-sm font-medium text-ink-secondary">Data da captação</span>
-                      <input type="date" value={p.captacao?.data || ""} onChange={(e) => update(i, { ...p, captacao: { ...(p.captacao || {}), data: e.target.value } })} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary" />
-                    </label>
-                    <Field label="Capturado por" value={p.captacao?.capturadoPor} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), capturadoPor: v } })} placeholder="Ex: nome do fotógrafo" />
-                  </div>
-                  <div className="mt-3">
-                    <TextArea label="Observações da captação" value={p.captacao?.observacoes} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), observacoes: v } })} />
-                  </div>
-                </div>
-
-                {/* Material no Google Drive */}
-                <div className="rounded-lg border border-black/10 bg-white p-3">
-                  <span className="mb-2 block text-sm font-semibold text-ink-secondary">Material (Drive)</span>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <DriveLinkField label="Link da pasta de fotos (Drive)" value={p.driveLinks?.fotos} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), fotos: v } })} />
-                    <DriveLinkField label="Link do vídeo (Drive)" value={p.driveLinks?.video} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), video: v } })} />
-                  </div>
-                </div>
-
-                {/* Distribuição (checklist de marketing) */}
-                <div className="rounded-lg border border-black/10 bg-white p-3">
-                  <span className="mb-1 block text-sm font-semibold text-ink-secondary">Distribuição <span className="font-normal text-ink-muted">({distribCount(p)}/{DISTRIBUICAO_ITENS.length})</span></span>
-                  <p className="mb-2 text-xs text-ink-muted">Marque conforme for postando/anunciando.</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {DISTRIBUICAO_ITENS.map((it) => (
-                      <label key={it.key} className="flex items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
-                        <input type="checkbox" checked={!!p.distribuicao?.[it.key]} onChange={(e) => update(i, { ...p, distribuicao: { ...(p.distribuicao || {}), [it.key]: e.target.checked } })} className="h-4 w-4 accent-primary" />
-                        {it.label}
-                      </label>
+                  <div className="flex-1 space-y-2 p-2">
+                    {cards.length === 0 && <div className="rounded-lg border border-dashed border-black/10 py-6 text-center text-[11px] text-ink-muted">— vazio —</div>}
+                    {cards.map(({ p, i }) => (
+                      <KanbanCard
+                        key={p.id || i}
+                        p={p}
+                        i={i}
+                        active={dragIdx === i}
+                        team={team}
+                        onOpen={() => setOpenIdx(i)}
+                        onDragStart={() => setDragIdx(i)}
+                        onDragEnd={() => { setDragIdx(null); setOverCol(null); }}
+                        onResp={(v) => update(i, { ...p, responsavel: v })}
+                        onMove={(dir) => { const t = cur + dir; if (t >= 0 && t < etapaValues.length) moveToEtapa(i, etapaValues[t]); }}
+                        canPrev={cur > 0}
+                        canNext={cur < etapaValues.length - 1}
+                      />
                     ))}
                   </div>
                 </div>
-
-                <MultiImageField images={p.images || []} onChange={(imgs) => update(i, { ...p, images: imgs })} coverImage={p.coverImage} showCover={!!p.cover} onSetCover={(src) => update(i, { ...p, coverImage: src })} />
-                <button onClick={() => remove(i)} className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Excluir imóvel</button>
-              </div>
-            )}
+              );
+            })}
           </div>
-              )}
-            </Fragment>
-          );
-        })}
-      </div>
+        </>
+      ) : (
+        /* ===== LISTA ===== */
+        <div className="space-y-3">
+          {rows.length === 0 && (
+            <div className="rounded-lg border border-dashed border-ink-muted p-8 text-center text-sm text-ink-muted">Nenhum imóvel neste filtro/busca.</div>
+          )}
+          {ordered.map((row, k) => {
+            const { p, i, g } = row;
+            const firstOfGroup = k === 0 || ordered[k - 1].g !== g;
+            const groupCount = g === "rascunho" ? rascunhos.length : noSite.length;
+            const isOpen = !collapsed[g];
+            return (
+              <Fragment key={p.id || i}>
+                {firstOfGroup && (
+                  <button type="button" onClick={() => setCollapsed((c) => ({ ...c, [g]: !c[g] }))} className="mt-2 flex w-full items-center gap-2 px-1 py-1 text-left first:mt-0">
+                    <span className="text-ink-muted">{isOpen ? "▾" : "▸"}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">{g === "rascunho" ? "Rascunhos · em produção" : "No site"}</span>
+                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{groupCount}</span>
+                  </button>
+                )}
+                {isOpen && (
+                  <div className={`group rounded-lg border border-black/10 bg-white border-l-4 ${p.publicado ? "border-l-[#4ecb5b]" : "border-l-[#ffa200]"}`}>
+                    <div className="flex w-full items-center gap-2 px-3 py-2.5 md:gap-3 md:px-4">
+                      {showReorder && (
+                        <div className="flex flex-col md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
+                          <button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Mover para cima" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg>
+                          </button>
+                          <button onClick={() => move(i, 1)} disabled={i === properties.length - 1} aria-label="Mover para baixo" className="flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-30">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
+                          </button>
+                        </div>
+                      )}
+
+                      <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                        {p.images?.[0] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.images[0]} alt="" className="h-10 w-14 shrink-0 rounded object-cover" />
+                        ) : (<span className="flex h-10 w-14 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
+                        <span className="min-w-0">
+                          <span className={`block truncate text-sm font-medium ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel — clique para preencher"}</span>
+                          <span className="block truncate text-xs text-ink-muted">Cód: {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
+                          <span className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
+                            {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
+                            <ResponsavelChip member={teamBy[p.responsavel]} size="xs" />
+                            <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "—"}</span>
+                            {p.publicado && <span className="text-[10px] text-ink-muted">Divulg {distribCount(p)}/{DISTRIBUICAO_ITENS.length}</span>}
+                          </span>
+                        </span>
+                      </button>
+
+                      {/* colunas alinhadas (desktop) */}
+                      <div className="hidden w-24 shrink-0 md:block">{p.status && p.status !== "disponivel" ? <StatusBadge status={p.status} /> : <span className="text-xs text-ink-muted">—</span>}</div>
+                      <div className="hidden w-32 shrink-0 md:block">{teamBy[p.responsavel] ? <ResponsavelChip member={teamBy[p.responsavel]} size="xs" /> : <span className="text-xs text-ink-muted">—</span>}</div>
+                      <div className="hidden w-28 shrink-0 md:block"><span className="rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "—"}</span></div>
+                      <div className="hidden w-16 shrink-0 md:block" title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}>{p.publicado ? <DistribDots p={p} /> : <span className="text-xs text-ink-muted">—</span>}</div>
+                      <div className="hidden w-12 shrink-0 items-center gap-1 text-sm md:flex">
+                        {p.cover && <span title="Capa da home">🏠</span>}
+                        {p.featured && <span title="Destaque">⭐</span>}
+                      </div>
+                      <div className="hidden w-28 shrink-0 md:block">
+                        <button onClick={() => togglePublish(i, p)} className={`w-full rounded px-2 py-1 text-[11px] font-semibold transition-colors ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}>{p.publicado ? "Despublicar" : "Publicar"}</button>
+                      </div>
+
+                      <button onClick={() => togglePublish(i, p)} className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold md:hidden ${p.publicado ? "bg-black/5 text-ink-secondary" : "bg-primary text-ink-cta"}`}>{p.publicado ? "Despub." : "Publicar"}</button>
+
+                      <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-label="Abrir" className="shrink-0 text-ink-muted">{openIdx === i ? "▲" : "▼"}</button>
+                    </div>
+                    {openIdx === i && (
+                      <div className="border-t border-black/10 p-4">
+                        <PropertyEditor p={p} i={i} update={update} remove={remove} team={team} funnel={funnel} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Editor em painel lateral (visão Funil) */}
+      {view === "funil" && openIdx != null && properties[openIdx] && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={() => setOpenIdx(null)}>
+          <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-black/10 px-4 py-3">
+              <span className="truncate text-sm font-semibold text-ink">{properties[openIdx].title || "Novo imóvel"} <span className="font-normal text-ink-muted">· Cód {properties[openIdx].code}</span></span>
+              <button onClick={() => setOpenIdx(null)} className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-black/5">✕ Fechar</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <PropertyEditor p={properties[openIdx]} i={openIdx} update={update} remove={remove} team={team} funnel={funnel} />
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
+  );
+}
+
+/* ===================== EQUIPE & FUNIL ===================== */
+
+function EquipeTab({ data, setSection }) {
+  const team = Array.isArray(data.team) ? data.team : [];
+  const funnel = Array.isArray(data.funnel) ? data.funnel : [];
+  const newId = (prefix) => prefix + Math.random().toString(36).slice(2, 8);
+  const arrowBtn = "flex h-7 w-7 items-center justify-center rounded border border-black/10 text-ink-muted hover:bg-black/5 disabled:opacity-30";
+
+  // Equipe
+  const updTeam = (i, m) => { const n = team.slice(); n[i] = m; setSection("team", n); };
+  const addTeam = () => setSection("team", [...team, { id: newId("m_"), name: "", role: "", emoji: "🙂", color: "#4f46e5" }]);
+  const moveTeam = (i, d) => { const j = i + d; if (j < 0 || j >= team.length) return; const n = team.slice(); [n[i], n[j]] = [n[j], n[i]]; setSection("team", n); };
+  const delTeam = (i) => { if (!confirm(`Remover “${team[i]?.name || "membro"}” da equipe? Imóveis com esse responsável ficarão “sem responsável”.`)) return; setSection("team", team.filter((_, idx) => idx !== i)); };
+
+  // Funil
+  const updFun = (i, s) => { const n = funnel.slice(); n[i] = s; setSection("funnel", n); };
+  const addFun = () => setSection("funnel", [...funnel, { id: newId("e_"), label: "Nova etapa", owner: team[0]?.id || "", hint: "" }]);
+  const moveFun = (i, d) => { const j = i + d; if (j < 0 || j >= funnel.length) return; const n = funnel.slice(); [n[i], n[j]] = [n[j], n[i]]; setSection("funnel", n); };
+  const delFun = (i) => { if (funnel.length <= 1) { alert("O funil precisa de pelo menos uma etapa."); return; } if (!confirm("Remover esta etapa? Imóveis nela voltam para a primeira coluna.")) return; setSection("funnel", funnel.filter((_, idx) => idx !== i)); };
+
+  return (
+    <>
+      <Card title="Equipe (responsáveis do Kanban)">
+        <p className="-mt-2 text-xs text-ink-muted">Estas pessoas viram as opções de <strong>Responsável</strong> nos imóveis e os donos das etapas. Cor e emoji formam o chip colorido.</p>
+        <div className="space-y-3">
+          {team.map((m, i) => (
+            <div key={m.id || i} className="rounded-lg border border-black/10 p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <ResponsavelChip member={m} />
+                <span className="text-xs text-ink-muted">{m.role}</span>
+                <div className="ml-auto flex items-center gap-1">
+                  <button onClick={() => moveTeam(i, -1)} disabled={i === 0} className={arrowBtn}>▲</button>
+                  <button onClick={() => moveTeam(i, 1)} disabled={i === team.length - 1} className={arrowBtn}>▼</button>
+                  <button onClick={() => delTeam(i)} className="rounded border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50">Excluir</button>
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-4">
+                <Mini label="Nome" value={m.name} onChange={(v) => updTeam(i, { ...m, name: v })} />
+                <Mini label="Função" value={m.role} onChange={(v) => updTeam(i, { ...m, role: v })} />
+                <Mini label="Emoji" value={m.emoji} onChange={(v) => updTeam(i, { ...m, emoji: v })} />
+                <label className="block">
+                  <span className="mb-1 block text-xs text-ink-muted">Cor</span>
+                  <span className="flex items-center gap-2">
+                    <input type="color" value={m.color || "#4f46e5"} onChange={(e) => updTeam(i, { ...m, color: e.target.value })} className="h-10 w-12 cursor-pointer rounded border border-inputborder" />
+                    <input value={m.color || ""} onChange={(e) => updTeam(i, { ...m, color: e.target.value })} className="h-10 w-full rounded-lg border border-inputborder px-2 text-sm uppercase outline-none focus:border-primary" />
+                  </span>
+                </label>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={addTeam} className="mt-1 rounded-lg border border-black/15 bg-white px-3.5 py-2 text-sm font-semibold text-ink-secondary hover:bg-black/5">+ Adicionar pessoa</button>
+      </Card>
+
+      <Card title="Funil de etapas (colunas do Kanban)">
+        <p className="-mt-2 text-xs text-ink-muted">A ordem aqui é a ordem das colunas. A <strong>última etapa</strong> é a de “no site”: arrastar um imóvel até ela publica no site (e tirar de lá volta a rascunho).</p>
+        <div className="space-y-2">
+          {funnel.map((s, i) => (
+            <div key={s.id || i} className="rounded-lg border border-black/10 p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-white">{i + 1}</span>
+                <span className="text-sm font-medium text-ink">{s.label || "—"}</span>
+                {i === funnel.length - 1 && <span className="rounded-full bg-[#e8f8ea] px-2 py-0.5 text-[10px] font-semibold text-[#2fa03c]">publica no site</span>}
+                <div className="ml-auto flex items-center gap-1">
+                  <button onClick={() => moveFun(i, -1)} disabled={i === 0} className={arrowBtn}>▲</button>
+                  <button onClick={() => moveFun(i, 1)} disabled={i === funnel.length - 1} className={arrowBtn}>▼</button>
+                  <button onClick={() => delFun(i)} className="rounded border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50">Excluir</button>
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Mini label="Nome da etapa" value={s.label} onChange={(v) => updFun(i, { ...s, label: v })} />
+                <label className="block">
+                  <span className="mb-1 block text-xs text-ink-muted">Responsável (dono da etapa)</span>
+                  <select value={s.owner || ""} onChange={(e) => updFun(i, { ...s, owner: e.target.value })} className="h-10 w-full rounded-lg border border-inputborder px-2 text-sm outline-none focus:border-primary">
+                    <option value="">—</option>
+                    {team.map((t) => <option key={t.id} value={t.id}>{t.emoji} {t.name}</option>)}
+                  </select>
+                </label>
+                <Mini label="Dica (opcional)" value={s.hint} onChange={(v) => updFun(i, { ...s, hint: v })} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={addFun} className="mt-1 rounded-lg border border-black/15 bg-white px-3.5 py-2 text-sm font-semibold text-ink-secondary hover:bg-black/5">+ Adicionar etapa</button>
+      </Card>
+    </>
   );
 }
 
@@ -673,11 +966,18 @@ function MarcaTab({ data, patch }) {
         <Field label="Nome destacado (parte 2)" value={b.nameHighlight} onChange={(v) => patch("brand", "nameHighlight", v)} />
         <Field label="Subtítulo / profissão" value={b.tagline} onChange={(v) => patch("brand", "tagline", v)} />
       </Card>
+      <Card title="SEO / Metadados (Google e redes sociais)">
+        <p className="-mt-2 text-xs text-ink-muted">Deixe em branco para gerar automaticamente a partir da marca.</p>
+        <Field label="Título da aba/navegador (vazio = automático)" value={data.seo?.metaTitle} onChange={(v) => patch("seo", "metaTitle", v)} placeholder={`${b.name} ${b.nameHighlight}${b.tagline ? ` | ${b.tagline}` : ""}`} />
+        <Field label="Nome do site ao compartilhar (vazio = automático)" value={data.seo?.siteName} onChange={(v) => patch("seo", "siteName", v)} />
+        <TextArea label="Descrição (aparece no Google e ao compartilhar o link)" value={data.seo?.description} onChange={(v) => patch("seo", "description", v)} />
+        <ImageField label="Imagem ao compartilhar / Open Graph (vazio = foto do “Sobre”)" value={data.seo?.ogImage} onChange={(v) => patch("seo", "ogImage", v)} />
+      </Card>
       <Card title="Cores do tema">
         <p className="-mt-2 text-xs text-ink-muted">Estas cores valem para o site inteiro. Veja onde cada uma aparece:</p>
         <ColorField
           label="Cor primária (âmbar)"
-          hint="Botões de ação (Buscar, Ver imóvel, Ver todos os imóveis, Falar com a Paula), barra do rodapé e detalhes em âmbar."
+          hint="Botões de ação (Buscar, Ver imóvel, Ver todos os imóveis, Fale conosco), barra do rodapé e detalhes em âmbar."
           value={c.primary}
           onChange={(v) => patch("colors", "primary", v)}
         />
@@ -711,7 +1011,11 @@ function MenuTab({ data, patch, setSection }) {
       <Card title="Contato & Redes">
         <Field label="WhatsApp (só números, com DDI 55)" value={c.whatsapp} onChange={(v) => patch("contact", "whatsapp", v)} placeholder="5512999999999" />
         <Field label="Telefone exibido" value={c.phoneDisplay} onChange={(v) => patch("contact", "phoneDisplay", v)} />
-        <Field label="CRECI" value={c.creci} onChange={(v) => patch("contact", "creci", v)} />
+        <Field label="Mensagem padrão do WhatsApp" value={c.whatsappMessage} onChange={(v) => patch("contact", "whatsappMessage", v)} placeholder="Olá, gostaria de falar sobre um imóvel." />
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Sigla do conselho" value={c.creciLabel} onChange={(v) => patch("contact", "creciLabel", v)} placeholder="CRECI-SP" />
+          <Field label="Número do CRECI" value={c.creci} onChange={(v) => patch("contact", "creci", v)} />
+        </div>
         <Field label="E-mail (opcional)" value={c.email} onChange={(v) => patch("contact", "email", v)} />
         <Field label="Instagram (URL)" value={c.instagram} onChange={(v) => patch("contact", "instagram", v)} />
         <Field label="Facebook (URL)" value={c.facebook} onChange={(v) => patch("contact", "facebook", v)} />
@@ -738,7 +1042,7 @@ function SecoesTab({ data, patch, setSection }) {
         )} />
       </Card>
 
-      <Card title="Sobre a Paula">
+      <Card title="Sobre / Bio (seção da home)">
         <ImageField label="Foto" value={a.photo} onChange={(v) => patch("about", "photo", v)} />
         <Field label="Rótulo (eyebrow)" value={a.eyebrow} onChange={(v) => patch("about", "eyebrow", v)} />
         <Field label="Título" value={a.title} onChange={(v) => patch("about", "title", v)} />

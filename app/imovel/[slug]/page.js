@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { getContent } from "@/lib/content";
+import { getContent, seoFor } from "@/lib/content";
 import { getPublishedProperty } from "@/lib/properties";
 import { formatBRL } from "@/lib/format";
+import { siteUrl } from "@/lib/site";
 import ThemeStyle from "@/components/ThemeStyle";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -14,7 +15,8 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const p = await getPublishedProperty(params.slug);
-  if (!p) return { title: "Imóvel | Paula Regina" };
+  const seo = seoFor(await getContent());
+  if (!p) return { title: `Imóvel | ${seo.fullName}` };
 
   const bits = [];
   if (p.area > 0) bits.push(`${p.area} m²`);
@@ -28,7 +30,7 @@ export async function generateMetadata({ params }) {
     `${p.type} em ${p.neighborhood}, ${p.city}/${p.state}.`,
     bits.join(" · "),
     priceTxt && `— ${priceTxt}`,
-    `Cód. ${p.code}. Fale com a Paula Regina.`,
+    `Cód. ${p.code}. Fale com ${seo.fullName}.`,
   ]
     .filter(Boolean)
     .join(" ")
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }) {
   const url = `/imovel/${p.slug}`;
 
   return {
-    title: `${p.title} | Paula Regina`,
+    title: `${p.title} | ${seo.fullName}`,
     description,
     alternates: { canonical: url },
     openGraph: {
@@ -63,9 +65,30 @@ export default async function PropertyPage({ params }) {
   const p = await getPublishedProperty(params.slug);
   if (!p) notFound();
 
-  const wa = `https://wa.me/${c.contact.whatsapp || ""}?text=${encodeURIComponent(
-    `Olá Paula, tenho interesse no imóvel cód. ${p.code}: ${p.title}`
-  )}`;
+  // Mensagem do WhatsApp já preenchida com os dados deste imóvel.
+  const brokerName = [c.brand?.name, c.brand?.nameHighlight].filter(Boolean).join(" ").trim();
+  const priceLine =
+    p.price > 0
+      ? `Valor: ${formatBRL(p.price)}`
+      : p.rentPrice > 0
+      ? `Aluguel: ${formatBRL(p.rentPrice)}/mês`
+      : "";
+  const locationLine = [p.neighborhood, p.city && `${p.city}${p.state ? `/${p.state}` : ""}`].filter(Boolean).join(" - ");
+  const propUrl = `${siteUrl()}/imovel/${p.slug}`;
+  const detailLines = [
+    p.title,
+    `Código: ${p.code}`,
+    locationLine && `Local: ${locationLine}`,
+    priceLine,
+  ].filter(Boolean);
+  const waMessage = [
+    `Olá${brokerName ? ` ${brokerName}` : ""}, tenho interesse neste imóvel:`,
+    "",
+    ...detailLines,
+    "",
+    propUrl,
+  ].join("\n");
+  const wa = `https://wa.me/${c.contact.whatsapp || ""}?text=${encodeURIComponent(waMessage)}`;
 
   return (
     <main className="min-h-screen bg-white">
@@ -153,7 +176,7 @@ export default async function PropertyPage({ params }) {
 
               <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-base font-medium text-white transition-colors hover:bg-ink-secondary">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.05 2C6.5 2 2 6.5 2 12.05c0 1.77.46 3.45 1.34 4.95L2 22l5.13-1.32a10 10 0 0 0 4.92 1.27c5.55 0 10.05-4.5 10.05-10.05S17.6 2 12.05 2z" /></svg>
-                Falar com Paula Regina
+                Falar com {brokerName || "o corretor"}
               </a>
             </div>
           </aside>

@@ -1,5 +1,6 @@
 import { Poppins } from "next/font/google";
 import { siteUrl } from "@/lib/site";
+import { getContent, seoFor } from "@/lib/content";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -15,31 +16,34 @@ export const viewport = {
   // não trava o zoom do usuário (acessibilidade); só evitamos o zoom de foco via CSS
 };
 
-const description =
-  "Encontre o imóvel que você quer com a experiência que você sempre quis. Atendimento personalizado em São José dos Campos e região.";
-
-export const metadata = {
-  metadataBase: new URL(siteUrl()),
-  title: "Paula Regina | Corretora de Imóveis",
-  description,
-  alternates: { canonical: "/" },
-  robots: { index: true, follow: true },
-  openGraph: {
-    title: "Paula Regina | Corretora de Imóveis",
-    description: "O imóvel que você quer, com a experiência que você sempre quis.",
-    type: "website",
-    locale: "pt_BR",
-    siteName: "Paula Regina — Corretora de Imóveis",
-    url: "/",
-    images: [{ url: "/paula-regina.jpg", alt: "Paula Regina — Corretora de Imóveis" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Paula Regina | Corretora de Imóveis",
+export async function generateMetadata() {
+  const content = await getContent();
+  const seo = seoFor(content);
+  const description = seo.description;
+  const images = seo.ogImage ? [{ url: seo.ogImage, alt: seo.siteName }] : undefined;
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: seo.title,
     description,
-    images: ["/paula-regina.jpg"],
-  },
-};
+    alternates: { canonical: "/" },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title: seo.title,
+      description,
+      type: "website",
+      locale: "pt_BR",
+      siteName: seo.siteName,
+      url: "/",
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.title,
+      description,
+      images: seo.ogImage ? [seo.ogImage] : undefined,
+    },
+  };
+}
 
 export default function RootLayout({ children }) {
   return (
