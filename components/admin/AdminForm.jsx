@@ -209,7 +209,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
     <div className="min-h-screen bg-[#f1f3f5] text-ink">
       {/* Cabeçalho */}
       <header className="sticky top-0 z-30 border-b border-black/10 bg-white/95 shadow-sm backdrop-blur">
-        <div className={`mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6 ${tab === "imoveis" ? "max-w-[1760px]" : "max-w-6xl"}`}>
+        <div className="mx-auto flex max-w-[1760px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2 font-poppins text-lg font-semibold">
             {data.brand?.name} <span className="text-primary-dark">{data.brand?.nameHighlight}</span>
             <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs font-medium text-ink-muted">Painel</span>
@@ -228,7 +228,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
         </div>
       </header>
 
-      <div className={`mx-auto px-4 py-5 md:px-6 lg:flex lg:gap-6 ${tab === "imoveis" ? "max-w-[1760px]" : "max-w-6xl"}`}>
+      <div className="mx-auto max-w-[1760px] px-4 py-5 md:px-6 lg:flex lg:gap-6">
         {/* Navegação: abas roláveis no mobile, sidebar no desktop */}
         <nav className="no-scrollbar -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6 lg:mx-0 lg:mb-0 lg:w-60 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
           {TABS.map((t) => {
@@ -513,6 +513,48 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
         </label>
       </div>
 
+      {/* Proprietário */}
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Proprietário</span>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Nome" value={p.proprietario?.nome} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), nome: v } })} />
+          <Field label="Contato (telefone/WhatsApp)" value={p.proprietario?.contato} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), contato: v } })} />
+        </div>
+        <label className="mt-3 flex items-center gap-2 text-sm text-ink-secondary">
+          <input type="checkbox" checked={!!p.proprietario?.exclusividade} onChange={(e) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), exclusividade: e.target.checked } })} className="h-4 w-4 accent-primary" />
+          Contrato de exclusividade com o corretor
+        </label>
+      </div>
+
+      {/* Captação */}
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Captação</span>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-ink-secondary">Data da captação</span>
+            <input type="date" value={p.captacao?.data || ""} onChange={(e) => update(i, { ...p, captacao: { ...(p.captacao || {}), data: e.target.value } })} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary" />
+          </label>
+          <Field label="Capturado por" value={p.captacao?.capturadoPor} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), capturadoPor: v } })} placeholder="Ex: Guilherme" />
+        </div>
+        <div className="mt-3">
+          <TextArea label="Observações da captação" value={p.captacao?.observacoes} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), observacoes: v } })} />
+        </div>
+      </div>
+
+      {/* Divulgação */}
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <span className="mb-1 block text-sm font-semibold text-ink-secondary">Divulgação <span className="font-normal text-ink-muted">({distribCount(p)}/{DISTRIBUICAO_ITENS.length})</span></span>
+        <p className="mb-2 text-xs text-ink-muted">Marque conforme for postando/anunciando.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {DISTRIBUICAO_ITENS.map((it) => (
+            <label key={it.key} className="flex items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
+              <input type="checkbox" checked={!!p.distribuicao?.[it.key]} onChange={(e) => update(i, { ...p, distribuicao: { ...(p.distribuicao || {}), [it.key]: e.target.checked } })} className="h-4 w-4 accent-primary" />
+              {it.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
       {/* Passo 1 · Material no Drive */}
       <div className="rounded-lg border border-black/10 bg-white p-3">
         <StepHeader n={1} emoji="📁" title="Material no Drive" who="fotos e vídeo" done={STEPS[0].done(p)} />
@@ -598,45 +640,6 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
       <TextArea label="Instalações do imóvel (uma por linha)" value={(p.features || []).join("\n")} onChange={(v) => update(i, { ...p, features: linesToArray(v) })} />
       <TextArea label="Instalações do condomínio (uma por linha)" value={(p.condoFeatures || []).join("\n")} onChange={(v) => update(i, { ...p, condoFeatures: linesToArray(v) })} />
 
-      <div className="rounded-lg border border-black/10 bg-white p-3">
-        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Proprietário</span>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Nome" value={p.proprietario?.nome} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), nome: v } })} />
-          <Field label="Contato (telefone/WhatsApp)" value={p.proprietario?.contato} onChange={(v) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), contato: v } })} />
-        </div>
-        <label className="mt-3 flex items-center gap-2 text-sm text-ink-secondary">
-          <input type="checkbox" checked={!!p.proprietario?.exclusividade} onChange={(e) => update(i, { ...p, proprietario: { ...(p.proprietario || {}), exclusividade: e.target.checked } })} className="h-4 w-4 accent-primary" />
-          Contrato de exclusividade com o corretor
-        </label>
-      </div>
-
-      <div className="rounded-lg border border-black/10 bg-white p-3">
-        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Captação</span>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-ink-secondary">Data da captação</span>
-            <input type="date" value={p.captacao?.data || ""} onChange={(e) => update(i, { ...p, captacao: { ...(p.captacao || {}), data: e.target.value } })} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary" />
-          </label>
-          <Field label="Capturado por" value={p.captacao?.capturadoPor} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), capturadoPor: v } })} placeholder="Ex: Guilherme" />
-        </div>
-        <div className="mt-3">
-          <TextArea label="Observações da captação" value={p.captacao?.observacoes} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), observacoes: v } })} />
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-black/10 bg-white p-3">
-        <span className="mb-1 block text-sm font-semibold text-ink-secondary">Divulgação <span className="font-normal text-ink-muted">({distribCount(p)}/{DISTRIBUICAO_ITENS.length})</span></span>
-        <p className="mb-2 text-xs text-ink-muted">Marque conforme for postando/anunciando.</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {DISTRIBUICAO_ITENS.map((it) => (
-            <label key={it.key} className="flex items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
-              <input type="checkbox" checked={!!p.distribuicao?.[it.key]} onChange={(e) => update(i, { ...p, distribuicao: { ...(p.distribuicao || {}), [it.key]: e.target.checked } })} className="h-4 w-4 accent-primary" />
-              {it.label}
-            </label>
-          ))}
-        </div>
-      </div>
-
       <MultiImageField images={p.images || []} onChange={(imgs) => update(i, { ...p, images: imgs })} coverImage={p.coverImage} showCover={!!p.cover} onSetCover={(src) => update(i, { ...p, coverImage: src })} />
       <button onClick={() => remove(i)} className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Excluir imóvel</button>
     </div>
@@ -645,13 +648,11 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
 
 function ImoveisTab({ properties, setProperties, data }) {
   const [openIdx, setOpenIdx] = useState(null);
-  const [migrating, setMigrating] = useState(false);
   const [filter, setFilter] = useState("all");
   const [respFilter, setRespFilter] = useState("");
   const [query, setQuery] = useState("");
   const [view, setView] = useState("funil");
   const [collapsed, setCollapsed] = useState({});
-  const [showMigrate, setShowMigrate] = useState(false);
   const [dragIdx, setDragIdx] = useState(null);
   const [overCol, setOverCol] = useState(null);
   const [quickAdd, setQuickAdd] = useState(null);
@@ -701,23 +702,6 @@ function ImoveisTab({ properties, setProperties, data }) {
     update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? lastId : p.etapa });
   }
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
-  async function migrateStatus() {
-    if (!confirm("Isto lê os imóveis já salvos, move VENDIDO / EXCLUSIVIDADE / ALUGADO do título para o campo Situação e limpa os títulos (as URLs são preservadas).\n\nSalve suas alterações antes. Deseja continuar?")) return;
-    setMigrating(true);
-    try {
-      const res = await fetch("/api/admin/migrate", { method: "POST" });
-      const j = await res.json().catch(() => ({}));
-      if (j.ok) {
-        setProperties(j.properties);
-        alert(`Migração concluída: ${j.changed} de ${j.total} imóvel(is) ajustado(s).`);
-      } else {
-        alert(j.error || "Falha na migração.");
-      }
-    } catch {
-      alert("Erro de conexão.");
-    }
-    setMigrating(false);
-  }
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
   function add() {
     // Entrada rápida: infos básicas + link do Drive (o resto preenche depois, por etapa).
@@ -784,11 +768,11 @@ function ImoveisTab({ properties, setProperties, data }) {
         <div className="flex overflow-hidden rounded-lg border border-black/10">
           <button onClick={() => setView("funil")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "funil" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>▚ Funil</button>
           <button onClick={() => setView("lista")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "lista" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>☰ Lista</button>
-          <button onClick={() => setView("capa")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "capa" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>🏠 Capa &amp; Destaques</button>
+          <button onClick={() => setView("capa")} className={`px-3 py-2 text-sm font-semibold transition-colors ${view === "capa" ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}>🏠 Vitrine do site</button>
         </div>
       </div>
 
-      {/* Filtros de estado + manutenção */}
+      {/* Filtros de estado */}
       <div className="mb-2 flex flex-wrap items-center gap-1.5">
         {FILTERS.map((f) => {
           const active = filter === f.value;
@@ -797,7 +781,6 @@ function ImoveisTab({ properties, setProperties, data }) {
           );
         })}
         <span className="ml-1 text-xs text-ink-muted">{rows.length} de {properties.length}</span>
-        <button onClick={() => setShowMigrate((s) => !s)} className="ml-auto text-xs text-ink-muted underline hover:text-ink-secondary">Manutenção</button>
       </div>
 
       {/* Filtro por pessoa da equipe */}
@@ -814,15 +797,6 @@ function ImoveisTab({ properties, setProperties, data }) {
           );
         })}
       </div>
-
-      {showMigrate && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-black/15 bg-black/[0.02] p-3">
-          <button onClick={migrateStatus} disabled={migrating} className="rounded-lg border border-black/15 bg-white px-3.5 py-2 text-xs font-semibold text-ink-secondary hover:bg-black/5 disabled:opacity-60">
-            {migrating ? "Migrando..." : "Migrar títulos → Situação"}
-          </button>
-          <span className="text-xs text-ink-muted">Ação única: tira o “VENDIDO”/“EXCLUSIVIDADE” do texto do título e joga para o campo <strong>Situação</strong>. Pode rodar mais de uma vez sem problema.</span>
-        </div>
-      )}
 
       {view === "funil" ? (
         /* ===== KANBAN (funil de produção) ===== */
