@@ -414,10 +414,12 @@ function RespPicker({ value, onChange, team, compact }) {
   );
 }
 
-/* Selo de situação (todos os status, tamanho xs). Disponível vira pílula verde. */
-function SituacaoBadge({ status }) {
+/* Selo de situação (tamanho xs). Exclusividade/Vendido/Alugado sempre; "Disponível"
+   só quando showDisponivel (usado na Vitrine); no funil/lista fica oculto p/ não poluir. */
+function SituacaoBadge({ status, showDisponivel = false }) {
   if (status && status !== "disponivel") return <StatusBadge status={status} size="xs" />;
-  return <span className="rounded bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2fa03c]">Disponível</span>;
+  if (showDisponivel) return <span className="rounded bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2fa03c]">Disponível</span>;
+  return null;
 }
 
 /* Card do Kanban · faixa colorida do responsável, título, badges, e progresso (Drive/Texto/Ficha). */
@@ -462,12 +464,9 @@ function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragE
         </div>
       </div>
 
-      <div className="flex min-w-0 items-center justify-between gap-1 border-t border-black/5 px-2 py-1.5">
-        <RespPicker compact team={team} value={p.responsavel} onChange={onResp} />
-        <span className="flex shrink-0 items-center gap-1.5">
-          <StepDots p={p} />
-          {p.publicado && <><span className="h-3 w-px bg-black/10" /><span title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}><DistribDots p={p} /></span></>}
-        </span>
+      <div className="flex min-w-0 items-center gap-1.5 border-t border-black/5 px-2 py-1.5">
+        <StepDots p={p} />
+        {p.publicado && <><span className="h-3 w-px bg-black/10" /><span title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}><DistribDots p={p} /></span></>}
       </div>
 
       <div className="flex items-center justify-between border-t border-black/5 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -1118,7 +1117,7 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {p.price > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.price)}<span className="font-medium text-ink-muted"> · venda</span></span>}
                 {p.rentPrice > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.rentPrice)}/mês<span className="font-medium text-ink-muted"> · aluguel</span></span>}
-                <SituacaoBadge status={p.status} />
+                <SituacaoBadge status={p.status} showDisponivel />
               </div>
             </div>
             <button onClick={() => onEdit(i)} title="Editar" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
