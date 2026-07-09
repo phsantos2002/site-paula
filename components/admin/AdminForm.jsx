@@ -787,7 +787,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
   function add() {
     // Entrada rápida: infos básicas + fotos (upload direto) e/ou link do Drive.
-    setQuickAdd({ title: "", type: "Apartamento", neighborhood: "", city: "São José dos Campos", images: [], driveFotos: "", driveVideo: "" });
+    setQuickAdd({ title: "", type: "Apartamento", neighborhood: "", city: "São José dos Campos", textoBruto: "", images: [], driveFotos: "", driveVideo: "" });
   }
   function createFromQuick() {
     const qa = quickAdd;
@@ -802,6 +802,7 @@ function ImoveisTab({ properties, setProperties, data }) {
       type: qa.type || "Apartamento",
       neighborhood: qa.neighborhood || "",
       city: qa.city || "",
+      textoBruto: qa.textoBruto || "",
       images: Array.isArray(qa.images) ? qa.images : [],
       driveLinks: { fotos: qa.driveFotos || "", video: qa.driveVideo || "" },
     };
@@ -1062,6 +1063,11 @@ function ImoveisTab({ properties, setProperties, data }) {
                 <Field label="Bairro" value={quickAdd.neighborhood} onChange={(v) => setQuickAdd({ ...quickAdd, neighborhood: v })} />
               </div>
               <Field label="Cidade" value={quickAdd.city} onChange={(v) => setQuickAdd({ ...quickAdd, city: v })} />
+
+              <div>
+                <TextArea label="Texto bruto (opcional)" value={quickAdd.textoBruto} onChange={(v) => setQuickAdd({ ...quickAdd, textoBruto: v })} />
+                <p className="mt-1 text-xs text-ink-muted">Descrição solta do imóvel, do jeito que vier. Depois vira a ficha completa do site.</p>
+              </div>
 
               {/* Upload direto das fotos (vai direto pro site, sem baixar do Drive) */}
               <div className="rounded-lg border border-black/10 bg-black/[0.02] p-3">
