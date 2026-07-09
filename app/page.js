@@ -18,9 +18,12 @@ export default async function Home() {
   const all = await getPublishedProperties();
   const featured = all.filter((p) => p.featured).slice(0, 8);
   const coverProperties = all.filter((p) => p.cover);
+  // Template ativo (aba Templates do admin). Hoje só o "classico" existe; quando novos
+  // layouts entrarem, o branch de composição da home acontece a partir deste valor.
+  const template = c.template || "classico";
 
   return (
-    <main className="overflow-x-hidden">
+    <main className="overflow-x-hidden" data-template={template}>
       <ThemeStyle colors={c.colors} />
       <Header brand={c.brand} contact={c.contact} nav={c.nav} header={c.header} />
       <Hero hero={c.hero} coverProperties={coverProperties} />

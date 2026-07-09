@@ -149,6 +149,9 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
   const [tab, setTab] = useState("imoveis");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  // Navegação da aba Templates (template aberto + sub-aba). Vive aqui para não se
+  // perder quando o usuário alterna para outra aba do painel e volta.
+  const [tplNav, setTplNav] = useState({ openId: null, sub: "visao" });
 
   // patch(section, key, value) -> data[section][key] = value (cobre objetos e arrays-valor)
   function patch(section, key, value) {
@@ -162,6 +165,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
   async function save() {
     setSaving(true);
     setMsg(null);
+    const sent = data; // snapshot enviado; protege edições feitas durante o save
     try {
       const [r1, r2, r3] = await Promise.all([
         fetch("/api/admin/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
@@ -172,6 +176,9 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
       const j2 = await r2.json().catch(() => ({}));
       const j3 = await r3.json().catch(() => ({}));
       if (j1.ok && j2.ok && j3.ok) {
+        // Sincroniza com o que foi persistido (defaults mesclados), mas só se o usuário
+        // não editou nada enquanto o save estava em andamento (senão perderia digitação).
+        if (j1.content) setData((cur) => (cur === sent ? j1.content : cur));
         if (j2.properties) setProperties(j2.properties);
         if (j3.leads) setLeads(j3.leads);
         setMsg({ type: "ok", text: "Tudo salvo! Atualize o site para ver." });
@@ -252,7 +259,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
           {tab === "contatos" && <ContatosTab leads={leads} setLeads={setLeads} />}
           {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setProperties} data={data} />}
           {tab === "equipe" && <EquipeTab data={data} setSection={setSection} />}
-          {tab === "template" && <TemplatesTab data={data} patch={patch} setSection={setSection} />}
+          {tab === "template" && <TemplatesTab data={data} patch={patch} setSection={setSection} nav={tplNav} setNav={setTplNav} notify={setMsg} />}
         </div>
       </div>
 
@@ -1188,15 +1195,67 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
 
 /* ===================== TEMPLATES (galeria de temas) ===================== */
 
-// Registro de templates do site. "classico" = o layout atual (no ar). Novos entram aqui.
+// Registro de templates do site. "classico" = o layout original. Novos layouts entram aqui
+// e são escolhidos pelo campo content.template (consumido pelo site em app/page.js).
+// `features` alimenta a Visão geral e vira atalho para a sub-aba correspondente.
 const TEMPLATES = [
-  { id: "classico", name: "Clássico", tagline: "no ar hoje", desc: "Elegante e âmbar, com carrossel no topo e foco nos imóveis. É o visual atual do site.", available: true },
-  { id: "moderno", name: "Moderno", tagline: "em breve", desc: "Layout mais amplo e minimalista, com fotos grandes e tipografia forte.", available: false, accent: "#0f172a" },
-  { id: "vitrine", name: "Vitrine", tagline: "em breve", desc: "Home em grade de destaques, pensada para muitos imóveis e busca rápida.", available: false, accent: "#0ea5e9" },
+  {
+    id: "classico",
+    name: "Clássico",
+    tagline: "layout original",
+    desc: "Elegante e sofisticado, com carrossel de capa em tela cheia e foco total nos imóveis.",
+    features: [
+      { label: "Marca, cores e SEO", sub: "marca" },
+      { label: "Menu, WhatsApp e redes", sub: "menu" },
+      { label: "Carrossel de capa no topo", sub: "capa" },
+      { label: "Sobre, destaques e bairros", sub: "secoes" },
+      { label: "Formulário de contato", sub: "form" },
+      { label: "Rodapé completo", sub: "rodape" },
+    ],
+    available: true,
+    mock: "classico",
+  },
+  { id: "moderno", name: "Moderno", tagline: "em breve", desc: "Layout amplo e minimalista, com fotos grandes e tipografia forte.", features: [], available: false, accent: "#0f172a", mock: "moderno" },
+  { id: "vitrine", name: "Vitrine", tagline: "em breve", desc: "Home em grade de destaques, pensada para muitos imóveis e busca rápida.", features: [], available: false, accent: "#0ea5e9", mock: "vitrine" },
 ];
 
-// Mini mockup do site (usa a cor de destaque do template).
-function TemplatePreview({ accent }) {
+// Mini mockup do site, com uma variante por template (vende o conceito de cada layout).
+function TemplateMock({ variant = "classico", accent = "#94a3b8" }) {
+  if (variant === "moderno") {
+    return (
+      <div className="aspect-[16/10] w-full overflow-hidden rounded-lg border border-black/10 bg-[#0f172a] shadow-inner">
+        <div className="flex h-5 items-center justify-between px-2">
+          <span className="h-1.5 w-8 rounded-full bg-white/80" />
+          <span className="h-1 w-10 rounded bg-white/25" />
+        </div>
+        <div className="mx-2 h-12 rounded bg-gradient-to-br from-white/20 to-white/5" />
+        <div className="mx-2 mt-1.5 h-2 w-1/2 rounded bg-white/90" />
+        <div className="mx-2 mt-1 h-1 w-1/3 rounded bg-white/30" />
+        <div className="mt-2 grid grid-cols-2 gap-1.5 px-2">
+          {[0, 1].map((k) => <div key={k} className="h-8 rounded bg-white/10" />)}
+        </div>
+      </div>
+    );
+  }
+  if (variant === "vitrine") {
+    return (
+      <div className="aspect-[16/10] w-full overflow-hidden rounded-lg border border-black/10 bg-white shadow-inner">
+        <div className="flex h-5 items-center gap-1.5 px-2">
+          <span className="h-1.5 w-6 shrink-0 rounded-full" style={{ background: accent }} />
+          <span className="h-2 flex-1 rounded-full bg-black/10" />
+          <span className="h-2 w-6 shrink-0 rounded-full" style={{ background: accent }} />
+        </div>
+        <div className="mt-1 grid grid-cols-4 gap-1 px-2">
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((k) => (
+            <div key={k} className="overflow-hidden rounded bg-black/[0.03]">
+              <div className="h-5 bg-black/10" />
+              <div className="m-0.5 h-1 rounded" style={{ background: accent }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="aspect-[16/10] w-full overflow-hidden rounded-lg border border-black/10 bg-white shadow-inner">
       <div className="flex h-5 items-center justify-between px-2">
@@ -1226,54 +1285,97 @@ function TemplatePreview({ accent }) {
   );
 }
 
-/* Prévia real do site (iframe reduzido). */
-function SitePreview({ className = "" }) {
+/* Prévia real do site (iframe reduzido). `scale` controla a largura lógica renderizada
+   (menor = mais "desktop"); `refreshKey` recarrega; skeleton enquanto carrega. */
+function SitePreview({ className = "", scale = 0.4, refreshKey = 0 }) {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { setLoaded(false); }, [refreshKey]);
   return (
-    <div className={`relative overflow-hidden bg-black/[0.03] ${className}`}>
-      <iframe src="/" title="Prévia do site" scrolling="no" tabIndex={-1} className="pointer-events-none absolute left-0 top-0 h-[250%] w-[250%] origin-top-left scale-[0.4] border-0" />
+    <div className={`relative overflow-hidden bg-black/[0.04] ${className}`}>
+      {!loaded && (
+        <div aria-hidden className="absolute inset-0 animate-pulse p-3">
+          <div className="h-10 rounded-lg bg-black/10" />
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {[0, 1, 2].map((k) => <div key={k} className="h-12 rounded-lg bg-black/10" />)}
+          </div>
+        </div>
+      )}
+      <iframe
+        key={refreshKey}
+        src="/"
+        title="Prévia do site"
+        loading="lazy"
+        aria-hidden="true"
+        scrolling="no"
+        tabIndex={-1}
+        onLoad={() => setLoaded(true)}
+        className={`pointer-events-none absolute left-0 top-0 origin-top-left border-0 bg-white transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+        style={{ width: `${100 / scale}%`, height: `${100 / scale}%`, transform: `scale(${scale})` }}
+      />
     </div>
   );
 }
 
-function TemplatesTab({ data, patch, setSection }) {
-  const [openId, setOpenId] = useState(null);
+function TemplatesTab({ data, patch, setSection, nav, setNav, notify }) {
   const current = data.template || "classico";
-  const openTpl = TEMPLATES.find((t) => t.id === openId);
+  const openTpl = TEMPLATES.find((t) => t.id === nav.openId);
+  const activate = (id) => {
+    setSection("template", id);
+    notify?.({ type: "ok", text: "Template ativado. Clique em Salvar (no topo) para publicar." });
+  };
   if (openTpl) {
-    return <TemplateDetail tpl={openTpl} active={current === openTpl.id} data={data} patch={patch} setSection={setSection} onBack={() => setOpenId(null)} onActivate={() => setSection("template", openTpl.id)} />;
+    return (
+      <TemplateDetail
+        tpl={openTpl}
+        active={current === openTpl.id}
+        data={data}
+        patch={patch}
+        setSection={setSection}
+        sub={nav.sub}
+        setSub={(s) => setNav({ ...nav, sub: s })}
+        onBack={() => setNav({ openId: null, sub: "visao" })}
+        onActivate={() => activate(openTpl.id)}
+      />
+    );
   }
   return (
     <Card title="Templates do site">
-      <p className="-mt-2 text-sm text-ink-muted">Escolha o visual do seu site, como uma loja de temas. Ao trocar de template, <strong>todo o seu conteúdo é mantido</strong> (imóveis, marca, cores, textos, contatos) — muda só o layout. A personalização de cada template fica <strong>dentro dele</strong>.</p>
+      <p className="-mt-2 text-sm text-ink-muted">Escolha o visual do seu site, como uma loja de temas. Ao trocar de template, <strong>todo o seu conteúdo é mantido</strong> (imóveis, marca, cores, textos, contatos): muda só o layout. Os textos, cores e seções são um conteúdo só e acompanham você em qualquer template.</p>
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {TEMPLATES.map((t) => {
           const accent = t.id === "classico" ? (data.colors?.primary || "#F6BC41") : (t.accent || "#111827");
           const active = current === t.id;
           return (
-            <div key={t.id} className={`flex flex-col overflow-hidden rounded-xl border bg-white transition ${active ? "border-primary ring-2 ring-primary/30" : "border-black/10"}`}>
-              <button type="button" onClick={() => t.available && setOpenId(t.id)} className="relative block text-left">
-                <div className="p-3">
-                  {t.available
-                    ? <SitePreview className="aspect-[16/10] w-full rounded-lg border border-black/10" />
-                    : <div className="opacity-50 grayscale"><TemplatePreview accent={accent} /></div>}
-                </div>
-                {active && <span className="absolute right-4 top-4 rounded-full bg-[#16a34a] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">✓ Ativo</span>}
-                {!active && !t.available && <span className="absolute right-4 top-4 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Em breve</span>}
-              </button>
+            <div key={t.id} className={`group flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition ${active ? "border-primary ring-2 ring-primary/30" : "border-black/10"} ${t.available ? "hover:-translate-y-0.5 hover:shadow-md" : ""}`}>
+              <div className="relative p-3">
+                {active
+                  ? <SitePreview className="aspect-[16/10] w-full rounded-lg border border-black/10" scale={0.25} />
+                  : <div className={t.available ? "" : "opacity-70 saturate-[.65]"}><TemplateMock variant={t.mock} accent={accent} /></div>}
+                {t.available && (
+                  <button
+                    type="button"
+                    onClick={() => setNav({ openId: t.id, sub: "visao" })}
+                    aria-label={`Abrir template ${t.name}`}
+                    className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
+                  />
+                )}
+                {active && <span className="pointer-events-none absolute right-4 top-4 z-20 select-none rounded-full bg-[#16a34a] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/30">✓ Ativo</span>}
+                {!active && !t.available && <span className="pointer-events-none absolute right-4 top-4 z-20 select-none rounded-full bg-ink/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm backdrop-blur-sm">Em breve</span>}
+              </div>
               <div className="flex flex-1 flex-col px-4 pb-4">
                 <div className="flex items-baseline gap-2">
                   <h3 className="font-poppins text-base font-semibold text-ink">{t.name}</h3>
-                  <span className="text-xs text-ink-muted">· {t.tagline}</span>
+                  <span className="text-xs text-ink-muted">· {active ? "no ar" : t.tagline}</span>
                 </div>
                 <p className="mt-1 flex-1 text-xs leading-relaxed text-ink-muted">{t.desc}</p>
                 <div className="mt-3 flex gap-2">
                   {t.available ? (
                     <>
-                      <button onClick={() => setOpenId(t.id)} className="flex-1 rounded-lg bg-ink py-2 text-sm font-semibold text-white hover:bg-ink-secondary">{active ? "Personalizar" : "Abrir"}</button>
-                      {!active && <button onClick={() => setSection("template", t.id)} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Ativar</button>}
+                      <button onClick={() => setNav({ openId: t.id, sub: "visao" })} className="flex-1 rounded-lg bg-ink py-2 text-sm font-semibold text-white hover:bg-ink-secondary">{active ? "Personalizar" : "Ver e personalizar"}</button>
+                      {!active && <button onClick={() => activate(t.id)} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Ativar</button>}
                     </>
                   ) : (
-                    <button disabled className="flex-1 rounded-lg border border-dashed border-black/15 py-2 text-sm font-medium text-ink-muted">Em breve</button>
+                    <button disabled className="flex-1 cursor-default rounded-lg border border-dashed border-black/15 py-2 text-sm font-medium text-ink-muted">Em breve</button>
                   )}
                 </div>
               </div>
@@ -1285,57 +1387,112 @@ function TemplatesTab({ data, patch, setSection }) {
   );
 }
 
-/* Detalhe do template: prévia + saber mais + personalização embutida (sub-abas). */
-function TemplateDetail({ tpl, active, data, patch, setSection, onBack, onActivate }) {
-  const [sub, setSub] = useState("visao");
+/* Detalhe do template: prévia (desktop/celular) + saber mais + personalização embutida.
+   A navegação (sub) vem de cima (AdminForm) para sobreviver à troca de abas do painel. */
+function TemplateDetail({ tpl, active, data, patch, setSection, sub, setSub, onBack, onActivate }) {
+  const [device, setDevice] = useState("desktop");
+  const [rev, setRev] = useState(0);
+  // Ordem segue o site de cima a baixo; Marca & Cores é transversal e vem primeiro.
   const SUBS = [
     { id: "visao", label: "Visão geral" },
-    { id: "capa", label: "Capa" },
     { id: "marca", label: "Marca & Cores" },
     { id: "menu", label: "Menu & Contato" },
+    { id: "capa", label: "Capa" },
     { id: "secoes", label: "Seções da Home" },
     { id: "form", label: "Formulário" },
     { id: "rodape", label: "Rodapé" },
   ];
+  const deviceBtn = (id, label) => (
+    <button
+      type="button"
+      aria-pressed={device === id}
+      onClick={() => setDevice(id)}
+      className={`px-3 py-1.5 text-sm font-semibold transition-colors ${device === id ? "bg-ink text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}
+    >{label}</button>
+  );
   return (
     <div className="space-y-5">
+      {/* Cabeçalho */}
       <div className="flex flex-wrap items-center gap-3">
         <button onClick={onBack} className="inline-flex items-center gap-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-medium text-ink-secondary hover:bg-black/5">← Templates</button>
         <h2 className="font-poppins text-lg font-semibold text-ink">Template {tpl.name}</h2>
         {active
-          ? <span className="rounded-full bg-[#16a34a] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">✓ Ativo</span>
+          ? <span className="select-none rounded-full bg-[#16a34a] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/30">✓ Ativo</span>
           : <button onClick={onActivate} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Ativar este template</button>}
         <a href="/" target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-ink-secondary hover:bg-black/5">Ver site <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17 17 7M9 7h8v8" /></svg></a>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 border-b border-black/10 pb-2">
+      {/* Sub-abas (roláveis no celular) */}
+      <div role="tablist" aria-label="Personalização do template" className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto border-b border-black/10 px-4 pb-2 md:mx-0 md:flex-wrap md:px-0">
         {SUBS.map((s) => (
-          <button key={s.id} onClick={() => setSub(s.id)} className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${sub === s.id ? "bg-ink text-white" : "text-ink-secondary hover:bg-black/5"}`}>{s.label}</button>
+          <button
+            key={s.id}
+            role="tab"
+            aria-selected={sub === s.id}
+            onClick={() => setSub(s.id)}
+            className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${sub === s.id ? "bg-ink text-white" : "text-ink-secondary hover:bg-black/5"}`}
+          >{s.label}</button>
         ))}
       </div>
 
+      {/* Editando conteúdo com o template inativo: o conteúdo é compartilhado */}
+      {!active && sub !== "visao" && (
+        <p className="rounded-lg border border-[#ffa200]/40 bg-[#fff8ec] p-3 text-xs text-[#8a5a00]">Este template não está ativo. O conteúdo editado aqui é compartilhado e também vale para o template que está no ar.</p>
+      )}
+
       {sub === "visao" && (
-        <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-          <div className="overflow-hidden rounded-xl border border-black/10">
-            <SitePreview className="aspect-[16/10] w-full" />
+        <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+          {/* Prévia com modo desktop/celular e atualização */}
+          <div className="rounded-xl border border-black/10 bg-white p-3">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <div role="group" aria-label="Modo de visualização" className="inline-flex overflow-hidden rounded-lg border border-black/10">
+                {deviceBtn("desktop", "🖥️ Computador")}
+                {deviceBtn("mobile", "📱 Celular")}
+              </div>
+              <button type="button" onClick={() => setRev((r) => r + 1)} className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-black/5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" /></svg>
+                Atualizar prévia
+              </button>
+            </div>
+            {device === "desktop" ? (
+              <SitePreview className="aspect-[16/10] w-full rounded-lg border border-black/10" scale={0.5} refreshKey={rev} />
+            ) : (
+              <div className="mx-auto w-[250px] overflow-hidden rounded-[20px] border-[6px] border-ink/90 shadow-md">
+                <SitePreview className="aspect-[9/18] w-full" scale={0.62} refreshKey={rev} />
+              </div>
+            )}
+            <p className="mt-2 text-xs text-ink-muted">A prévia mostra o site publicado. Depois de clicar em <strong>Salvar</strong> (no topo), use “Atualizar prévia” para ver as mudanças.</p>
           </div>
+
+          {/* Sobre + atalhos de personalização */}
           <div className="rounded-xl border border-black/10 bg-white p-4">
             <h3 className="font-poppins text-base font-semibold text-ink">Sobre o {tpl.name}</h3>
             <p className="mt-1 text-sm leading-relaxed text-ink-secondary">{tpl.desc}</p>
-            <ul className="mt-3 space-y-1.5 text-sm text-ink-secondary">
-              <li>• Carrossel de capa no topo</li>
-              <li>• Seção “Sobre” com foto e estatísticas</li>
-              <li>• Destaques de imóveis + listagem com filtros</li>
-              <li>• Formulário de contato e rodapé completos</li>
-            </ul>
-            <p className="mt-3 text-xs text-ink-muted">Use as abas acima para personalizar cada parte deste template.</p>
-            <a href="/" target="_blank" rel="noreferrer" className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Ver site em tela cheia</a>
+            {tpl.features?.length > 0 && (
+              <>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">O que você personaliza</p>
+                <ul className="mt-1.5 space-y-0.5">
+                  {tpl.features.map((f) => (
+                    <li key={f.sub}>
+                      <button type="button" onClick={() => setSub(f.sub)} className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-ink-secondary transition-colors hover:bg-black/5">
+                        <span>{f.label}</span>
+                        <span className="shrink-0 text-xs font-semibold text-primary-dark">Editar →</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <a href="/" target="_blank" rel="noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-black/10 bg-white py-2 text-sm font-medium text-ink-secondary hover:bg-black/5">
+              Ver site em tela cheia
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17 17 7M9 7h8v8" /></svg>
+            </a>
           </div>
         </div>
       )}
-      {sub === "capa" && <CapaTab data={data} patch={patch} />}
       {sub === "marca" && <MarcaTab data={data} patch={patch} />}
       {sub === "menu" && <MenuTab data={data} patch={patch} setSection={setSection} />}
+      {sub === "capa" && <CapaTab data={data} patch={patch} />}
       {sub === "secoes" && <SecoesTab data={data} patch={patch} setSection={setSection} />}
       {sub === "form" && <FormTab data={data} patch={patch} />}
       {sub === "rodape" && <RodapeTab data={data} patch={patch} />}
@@ -1437,7 +1594,7 @@ function EquipeTab({ data, setSection }) {
 function CapaTab({ data, patch }) {
   const h = data.hero;
   return (
-    <Card title="Capa / Hero">
+    <Card title="Capa (topo do site)">
       <Field label="Título (1ª linha)" value={h.titleLine1} onChange={(v) => patch("hero", "titleLine1", v)} />
       <Field label="Título (2ª linha, em negrito)" value={h.titleLine2} onChange={(v) => patch("hero", "titleLine2", v)} />
       <div className="grid grid-cols-2 gap-3">
@@ -1476,8 +1633,8 @@ function MarcaTab({ data, patch }) {
       <Card title="Cores do tema">
         <p className="-mt-2 text-xs text-ink-muted">Estas cores valem para o site inteiro. Veja onde cada uma aparece:</p>
         <ColorField
-          label="Cor primária (âmbar)"
-          hint="Botões de ação (Buscar, Ver imóvel, Ver todos os imóveis, Fale conosco), barra do rodapé e detalhes em âmbar."
+          label="Cor primária (botões de ação)"
+          hint="Botões de ação (Buscar, Ver imóvel, Ver todos os imóveis, Fale conosco), barra do rodapé e detalhes."
           value={c.primary}
           onChange={(v) => patch("colors", "primary", v)}
         />
@@ -1488,7 +1645,7 @@ function MarcaTab({ data, patch }) {
           onChange={(v) => patch("colors", "primaryHover", v)}
         />
         <ColorField
-          label="Dourado (textos em destaque)"
+          label="Cor de destaque (títulos e preços)"
           hint="Números da faixa de credenciais, preços dos imóveis, partes destacadas dos títulos e o selo “Imóvel em destaque”."
           value={c.primaryDark}
           onChange={(v) => patch("colors", "primaryDark", v)}
@@ -1586,7 +1743,7 @@ function SecoesTab({ data, patch, setSection }) {
 function FormTab({ data, patch }) {
   const r = data.register;
   return (
-    <Card title="Seção de cadastro (Formulário)">
+    <Card title="Formulário de contato (seção de cadastro)">
       <Field label="Título · linha 1" value={r.headingLine1} onChange={(v) => patch("register", "headingLine1", v)} />
       <Field label="Título · linha 2" value={r.headingLine2} onChange={(v) => patch("register", "headingLine2", v)} />
       <Field label="Título · parte destacada" value={r.headingHighlight} onChange={(v) => patch("register", "headingHighlight", v)} />
