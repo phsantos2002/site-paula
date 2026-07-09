@@ -427,39 +427,39 @@ function SituacaoBadge({ status, showDisponivel = false }) {
   return null;
 }
 
-/* Card do Kanban · faixa colorida do responsável, título, badges, e progresso (Drive/Texto/Ficha). */
-function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragEnd, onResp, onMove, canPrev, canNext }) {
-  const member = (team || []).find((t) => t.id === p.responsavel);
-  const accent = member?.color || "#cbd5e1";
+/* Card do Kanban — limpo e premium: foto, título, código, valor, situação e estado (no ar/rascunho).
+   Faixa lateral colorida pelo estado (verde no ar · âmbar rascunho · verde/azul vendido/alugado). */
+function KanbanCard({ p, i, active, onOpen, onDelete, onDragStart, onDragEnd, onMove, canPrev, canNext }) {
   const priceTxt = p.price > 0 ? formatBRLShort(p.price) : p.rentPrice > 0 ? `${formatBRLShort(p.rentPrice)}/mês` : "";
+  const stripe = p.status === "vendido" ? "#16a34a" : p.status === "alugado" ? "#0ea5e9" : p.publicado ? "#4ecb5b" : "#ffa200";
   return (
     <div
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className={`group relative overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:-translate-y-px hover:shadow-md"}`}
+      className={`group relative overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:-translate-y-0.5 hover:shadow-md"}`}
     >
       {/* Ações rápidas (hover) */}
-      <div className="absolute right-1 top-1 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button onClick={(e) => { e.stopPropagation(); onOpen(); }} title="Editar" className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90 text-ink-secondary shadow-sm ring-1 ring-black/10 hover:bg-white hover:text-ink">
+      <div className="absolute right-1.5 top-1.5 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <button onClick={(e) => { e.stopPropagation(); onOpen(); }} title="Editar" className="flex h-6 w-6 items-center justify-center rounded-md bg-white/95 text-ink-secondary shadow-sm ring-1 ring-black/10 hover:bg-white hover:text-ink">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
         </button>
-        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Excluir" className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90 text-red-500 shadow-sm ring-1 ring-black/10 hover:bg-red-500 hover:text-white">
+        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Excluir" className="flex h-6 w-6 items-center justify-center rounded-md bg-white/95 text-red-500 shadow-sm ring-1 ring-black/10 hover:bg-red-500 hover:text-white">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M10 11v6M14 11v6" /></svg>
         </button>
       </div>
       <div className="flex cursor-pointer" role="button" onClick={onOpen}>
-        <span className="w-1 shrink-0" style={{ background: accent }} aria-hidden />
-        <div className="flex min-w-0 flex-1 gap-2 p-2">
+        <span className="w-1.5 shrink-0" style={{ background: stripe }} aria-hidden />
+        <div className="flex min-w-0 flex-1 gap-2.5 p-2.5">
           {p.images?.[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.images[0]} alt="" className="h-12 w-16 shrink-0 rounded object-cover" />
-          ) : (<span className="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
+            <img src={p.images[0]} alt="" className="h-14 w-20 shrink-0 rounded-lg object-cover" />
+          ) : (<span className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg bg-black/5 text-ink-muted">🏠</span>)}
           <div className="min-w-0 flex-1">
-            <div className={`truncate text-[13px] font-semibold leading-tight ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique"}</div>
+            <div className={`truncate text-[13px] font-semibold leading-snug ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique"}</div>
             <div className="mt-0.5 truncate text-[11px] text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</div>
-            {priceTxt && <div className="mt-0.5 truncate text-[11px] font-semibold text-primary-dark">{priceTxt}</div>}
-            <div className="mt-1 flex flex-wrap items-center gap-1">
+            {priceTxt && <div className="mt-0.5 truncate text-[13px] font-bold text-primary-dark">{priceTxt}</div>}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
               <SituacaoBadge status={p.status} />
               {p.publicado
                 ? <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>
@@ -469,11 +469,6 @@ function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragE
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="flex min-w-0 items-center gap-1.5 border-t border-black/5 px-2 py-1.5">
-        <StepDots p={p} />
-        {p.publicado && <><span className="h-3 w-px bg-black/10" /><span title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}><DistribDots p={p} /></span></>}
       </div>
 
       <div className="flex items-center justify-between border-t border-black/5 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -942,12 +937,10 @@ function ImoveisTab({ properties, setProperties, data }) {
                         p={p}
                         i={i}
                         active={dragIdx === i}
-                        team={team}
                         onOpen={() => setOpenIdx(i)}
                         onDelete={() => remove(i)}
                         onDragStart={() => setDragIdx(i)}
                         onDragEnd={() => { setDragIdx(null); setOverCol(null); }}
-                        onResp={(v) => update(i, { ...p, responsavel: v })}
                         onMove={(dir) => { const t = cur + dir; if (t >= 0 && t < columnsAll.length) moveToColumn(i, columnsAll[t]); }}
                         canPrev={cur > 0}
                         canNext={cur < columnsAll.length - 1}
@@ -1001,37 +994,27 @@ function ImoveisTab({ properties, setProperties, data }) {
                       <button onClick={() => setOpenIdx(i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                         {p.images?.[0] ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.images[0]} alt="" className="h-10 w-14 shrink-0 rounded object-cover" />
-                        ) : (<span className="flex h-10 w-14 shrink-0 items-center justify-center rounded bg-black/5 text-ink-muted">🏠</span>)}
-                        <span className="min-w-0">
-                          <span className={`block truncate text-sm font-medium ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique para preencher"}</span>
-                          <span className="block truncate text-xs text-ink-muted">Cód: {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
-                          {(p.price > 0 || p.rentPrice > 0) && <span className="block truncate text-xs font-semibold text-primary-dark">{p.price > 0 ? formatBRL(p.price) : `${formatBRL(p.rentPrice)}/mês`}</span>}
-                          <span className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
+                          <img src={p.images[0]} alt="" className="h-12 w-16 shrink-0 rounded-lg object-cover" />
+                        ) : (<span className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg bg-black/5 text-ink-muted">🏠</span>)}
+                        <span className="min-w-0 flex-1">
+                          <span className={`block truncate text-sm font-semibold ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique para preencher"}</span>
+                          <span className="block truncate text-xs text-ink-muted">Cód {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
+                          <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {(p.price > 0 || p.rentPrice > 0) && <span className="text-xs font-bold text-primary-dark">{p.price > 0 ? formatBRL(p.price) : `${formatBRL(p.rentPrice)}/mês`}</span>}
                             <SituacaoBadge status={p.status} />
-                            <ResponsavelChip member={teamBy[p.responsavel]} size="xs" />
-                            <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "·"}</span>
-                            <StepDots p={p} />
+                            {p.publicado
+                              ? <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>
+                              : <span className="inline-flex items-center gap-1 rounded-full bg-[#fff3e0] px-1.5 py-0.5 text-[10px] font-semibold text-[#b7791f]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffa200]" />rascunho</span>}
+                            {p.cover && <span title="Capa da home" className="text-[11px]">🏠</span>}
+                            {p.featured && <span title="Destaque" className="text-[11px]">⭐</span>}
                           </span>
                         </span>
                       </button>
 
-                      {/* colunas alinhadas (desktop) */}
-                      <div className="hidden w-24 shrink-0 md:block"><SituacaoBadge status={p.status} /></div>
-                      <div className="hidden w-32 shrink-0 md:block">{teamBy[p.responsavel] ? <ResponsavelChip member={teamBy[p.responsavel]} size="xs" /> : <span className="text-xs text-ink-muted">·</span>}</div>
-                      <div className="hidden w-28 shrink-0 md:block"><span className="rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "·"}</span></div>
-                      <div className="hidden w-14 shrink-0 md:block" title="Progresso: Drive · Texto · Ficha"><StepDots p={p} /></div>
-                      <div className="hidden w-16 shrink-0 md:block" title={`Divulgação ${distribCount(p)}/${DISTRIBUICAO_ITENS.length}`}>{p.publicado ? <DistribDots p={p} /> : <span className="text-xs text-ink-muted">·</span>}</div>
-                      <div className="hidden w-12 shrink-0 items-center gap-1 text-sm md:flex">
-                        {p.cover && <span title="Capa da home">🏠</span>}
-                        {p.featured && <span title="Destaque">⭐</span>}
-                      </div>
-                      <div className="hidden w-28 shrink-0 md:block">
-                        <button onClick={() => togglePublish(i, p)} className={`w-full rounded px-2 py-1 text-[11px] font-semibold transition-colors ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}>{p.publicado ? "Despublicar" : "Publicar"}</button>
-                      </div>
-
-                      <button onClick={() => togglePublish(i, p)} className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold md:hidden ${p.publicado ? "bg-black/5 text-ink-secondary" : "bg-primary text-ink-cta"}`}>{p.publicado ? "Despub." : "Publicar"}</button>
-
+                      <span className="hidden shrink-0 rounded-full bg-black/5 px-2.5 py-1 text-[11px] font-medium text-ink-secondary md:inline-block">
+                        {p.status === "vendido" ? "💰 Vendido" : p.status === "alugado" ? "🔑 Alugado" : p.publicado ? (etapaLabel[lastId] || "No site") : (etapaLabel[p.etapa] || p.etapa || "Captação")}
+                      </span>
+                      <button onClick={() => togglePublish(i, p)} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}>{p.publicado ? "Despublicar" : "Publicar"}</button>
                       <button onClick={() => setOpenIdx(i)} title="Editar" aria-label="Editar" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                     </div>
                   </div>
