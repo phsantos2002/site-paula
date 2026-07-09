@@ -487,6 +487,7 @@ function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragE
 function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DEFAULT_FUNNEL }) {
   const etapaOptions = funnel.map((f) => ({ value: f.id, label: f.label }));
   const lastId = funnel[funnel.length - 1]?.id;
+  const prevId = funnel[funnel.length - 2]?.id || funnel[0]?.id; // etapa antes da última
   return (
     <div className="space-y-4">
       {/* Progresso do imóvel (3 marcos: Drive → Texto → Ficha) */}
@@ -515,7 +516,7 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
             <span className="mb-1 block text-sm font-medium text-ink-secondary">Responsável agora</span>
             <RespPicker team={team} value={p.responsavel} onChange={(v) => update(i, { ...p, responsavel: v })} />
           </label>
-          <LabeledSelect label="Etapa (funil)" value={p.etapa || etapaOptions[0]?.value} options={etapaOptions} onChange={(v) => update(i, { ...p, etapa: v, publicado: v === lastId ? p.publicado : false })} />
+          <LabeledSelect label="Etapa (funil)" value={p.etapa || etapaOptions[0]?.value} options={etapaOptions} onChange={(v) => update(i, { ...p, etapa: v, publicado: v === lastId })} />
           <LabeledSelect label="Situação (badge no site)" value={p.status || "disponivel"} options={STATUS_OPTIONS} onChange={(v) => update(i, { ...p, status: v })} />
         </div>
         <div className="mt-3">
@@ -523,7 +524,7 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
           <div className="inline-flex overflow-hidden rounded-lg border border-black/10">
             <button
               type="button"
-              onClick={() => update(i, { ...p, publicado: false })}
+              onClick={() => update(i, { ...p, publicado: false, etapa: p.etapa === lastId ? prevId : p.etapa })}
               className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition-colors ${!p.publicado ? "bg-[#ffa200] text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}
             >📝 Rascunho</button>
             <button
@@ -714,16 +715,17 @@ function ImoveisTab({ properties, setProperties, data }) {
   const etapaLabel = Object.fromEntries(funnel.map((f) => [f.id, f.label]));
   const firstId = etapaValues[0];
   const lastId = etapaValues[etapaValues.length - 1];
+  const prevId = etapaValues[etapaValues.length - 2] || firstId; // etapa anterior à última (p/ despublicar)
   // Colunas do Kanban = etapas do funil + Vendidos/Alugados (por situação).
   const columnsAll = [
     ...funnel.map((f, idx) => ({ kind: "stage", id: f.id, label: f.label, hint: f.hint, owner: f.owner, num: idx + 1 })),
     ...SPECIAL_COLS.map((s) => ({ kind: "special", ...s })),
   ];
-  // Em qual coluna o imóvel aparece. Vendido/alugado vencem; senão publicado => última etapa.
+  // A coluna é decidida pela ETAPA (não pelo publicado). Vendido/alugado vão p/ colunas próprias.
+  // Regra do fluxo: publicado ⇔ está na última etapa ("No site"). Coerência garantida em todas as ações.
   function columnOf(p) {
     if (p.status === "vendido") return "__vendidos";
     if (p.status === "alugado") return "__alugados";
-    if (p.publicado) return lastId;
     return etapaValues.includes(p.etapa) ? p.etapa : firstId;
   }
   // Mover um imóvel para uma coluna (arrastar/setas). Especial = muda a situação;
@@ -752,8 +754,9 @@ function ImoveisTab({ properties, setProperties, data }) {
   }
   function clearFilters() { setFilter("all"); setRespFilter(""); setStatusFilter(""); setEtapaFilter(""); setTypeFilter(""); setDivulgacaoFilter(""); }
   function togglePublish(i, p) {
-    // Ao publicar, avança para a última etapa; ao despublicar, mantém a etapa.
-    update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? lastId : p.etapa });
+    // Publicar => última etapa ("No site"). Despublicar => sai da última etapa (volta uma).
+    const pub = !p.publicado;
+    update(i, { ...p, publicado: pub, etapa: pub ? lastId : (p.etapa === lastId ? prevId : p.etapa) });
   }
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
