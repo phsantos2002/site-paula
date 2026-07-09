@@ -925,7 +925,8 @@ function ImoveisTab({ properties, setProperties, data }) {
             const firstOfGroup = k === 0 || ordered[k - 1].g !== g;
             const groupCount = groupCounts[g];
             const isOpen = !collapsed[g];
-            const borderColor = p.status === "vendido" ? "#111827" : p.status === "alugado" ? "#0ea5e9" : p.publicado ? "#4ecb5b" : "#ffa200";
+            // Borda esquerda = estado (no ar vs rascunho). A situação já aparece no selo colorido.
+            const borderColor = p.publicado ? "#4ecb5b" : "#ffa200";
             return (
               <Fragment key={p.id || i}>
                 {firstOfGroup && (
