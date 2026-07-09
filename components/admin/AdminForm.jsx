@@ -886,7 +886,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
   function add() {
     // Entrada rápida: infos essenciais + fotos. O título e a ficha completa vêm depois.
-    setQuickAdd({ type: "Apartamento", neighborhood: "", city: "São José dos Campos", operation: ["Venda"], exclusividade: false, textoBruto: "", images: [], driveFotos: "", driveVideo: "" });
+    setQuickAdd({ type: "Apartamento", neighborhood: "", city: "São José dos Campos", operation: ["Venda"], price: 0, rentPrice: 0, exclusividade: false, textoBruto: "", images: [], driveFotos: "", driveVideo: "" });
   }
   function createFromQuick() {
     const qa = quickAdd;
@@ -901,6 +901,8 @@ function ImoveisTab({ properties, setProperties, data }) {
       neighborhood: qa.neighborhood || "",
       city: qa.city || "",
       operation: Array.isArray(qa.operation) && qa.operation.length ? qa.operation : ["Venda"],
+      price: Number(qa.price) || 0,
+      rentPrice: Number(qa.rentPrice) || 0,
       status: qa.exclusividade ? "exclusividade" : "disponivel",
       proprietario: { nome: "", contato: "", exclusividade: !!qa.exclusividade },
       textoBruto: qa.textoBruto || "",
@@ -1168,21 +1170,32 @@ function ImoveisTab({ properties, setProperties, data }) {
               </div>
               <Field label="Cidade" value={quickAdd.city} onChange={(v) => setQuickAdd({ ...quickAdd, city: v })} />
 
-              {/* Operação */}
-              <div>
-                <span className="mb-1.5 block text-sm font-medium text-ink-secondary">Operação</span>
-                <div className="flex flex-wrap gap-2">
-                  {["Venda", "Aluguel"].map((op) => {
-                    const on = (quickAdd.operation || []).includes(op);
-                    return (
-                      <button
-                        key={op}
-                        type="button"
-                        onClick={() => { const set = new Set(quickAdd.operation || []); on ? set.delete(op) : set.add(op); setQuickAdd({ ...quickAdd, operation: [...set] }); }}
-                        className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${on ? "border-primary bg-primary text-ink-cta" : "border-black/10 bg-white text-ink-secondary hover:bg-black/5"}`}
-                      >{op === "Aluguel" ? "Locação (aluguel)" : "Venda"}</button>
-                    );
-                  })}
+              {/* Operação + valor do imóvel */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <span className="mb-1.5 block text-sm font-medium text-ink-secondary">Operação</span>
+                  <div className="flex flex-wrap gap-2">
+                    {["Venda", "Aluguel"].map((op) => {
+                      const on = (quickAdd.operation || []).includes(op);
+                      return (
+                        <button
+                          key={op}
+                          type="button"
+                          onClick={() => { const set = new Set(quickAdd.operation || []); on ? set.delete(op) : set.add(op); setQuickAdd({ ...quickAdd, operation: [...set] }); }}
+                          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${on ? "border-primary bg-primary text-ink-cta" : "border-black/10 bg-white text-ink-secondary hover:bg-black/5"}`}
+                        >{op === "Aluguel" ? "Locação (aluguel)" : "Venda"}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Valor: aparece conforme a operação (venda e/ou aluguel) */}
+                <div className="space-y-2">
+                  {((quickAdd.operation || []).includes("Venda") || !(quickAdd.operation || []).length) && (
+                    <NumberField label="Valor de venda (R$)" value={quickAdd.price} onChange={(v) => setQuickAdd({ ...quickAdd, price: v })} />
+                  )}
+                  {(quickAdd.operation || []).includes("Aluguel") && (
+                    <NumberField label="Valor do aluguel (R$/mês)" value={quickAdd.rentPrice} onChange={(v) => setQuickAdd({ ...quickAdd, rentPrice: v })} />
+                  )}
                 </div>
               </div>
 
