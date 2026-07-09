@@ -1258,7 +1258,7 @@ function EquipeTab({ data, setSection }) {
               <div className="mb-2 flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-white">{i + 1}</span>
                 <span className="text-sm font-medium text-ink">{s.label || "·"}</span>
-                {i === funnel.length - 1 && <span className="rounded-full bg-[#e8f8ea] px-2 py-0.5 text-[10px] font-semibold text-[#2fa03c]">publica no site</span>}
+                {i === funnel.length - 1 && <span className="rounded-full bg-[#e8f8ea] px-2 py-0.5 text-[10px] font-semibold text-[#2fa03c]">Publicado no site</span>}
                 <div className="ml-auto flex items-center gap-1">
                   <button onClick={() => moveFun(i, -1)} disabled={i === 0} className={arrowBtn}>▲</button>
                   <button onClick={() => moveFun(i, 1)} disabled={i === funnel.length - 1} className={arrowBtn}>▼</button>
