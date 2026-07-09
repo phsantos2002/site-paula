@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatBRL } from "@/lib/format";
 
 const TABS = [
@@ -424,6 +425,49 @@ function SituacaoBadge({ status, showDisponivel = false }) {
   return null;
 }
 
+/* Menu de ações (⋮) do imóvel: Editar / Excluir. O dropdown vai por portal para não
+   ser cortado pelo card (overflow) nem por transform de ancestral. */
+function RowMenu({ onEdit, onDelete, overlay = false }) {
+  const [pos, setPos] = useState(null);
+  const btnRef = useRef(null);
+  function toggle(e) {
+    e.stopPropagation();
+    if (pos) { setPos(null); return; }
+    const r = btnRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.right - 192, window.innerWidth - 200)) });
+  }
+  const pick = (fn) => (e) => { e.stopPropagation(); setPos(null); fn(); };
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={toggle}
+        title="Ações"
+        aria-label="Ações do imóvel"
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-secondary transition-colors hover:bg-black/10 hover:text-ink ${overlay ? "bg-white/95 shadow-sm ring-1 ring-black/10" : ""}`}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
+      </button>
+      {pos != null && createPortal(
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={(e) => { e.stopPropagation(); setPos(null); }} onContextMenu={(e) => { e.preventDefault(); setPos(null); }} />
+          <div className="fixed z-[61] w-48 overflow-hidden rounded-xl border border-black/10 bg-white py-1 shadow-xl" style={{ top: pos.top, left: pos.left }} onClick={(e) => e.stopPropagation()}>
+            <button onClick={pick(onEdit)} className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-medium text-ink-secondary hover:bg-black/5">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+              Editar imóvel
+            </button>
+            <button onClick={pick(onDelete)} className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M10 11v6M14 11v6" /></svg>
+              Excluir imóvel
+            </button>
+          </div>
+        </>,
+        document.body
+      )}
+    </>
+  );
+}
+
 /* Card do Kanban — limpo e premium: foto, título, código, valor, situação e estado (no ar/rascunho).
    Faixa lateral colorida pelo estado (verde no ar · âmbar rascunho · verde/azul vendido/alugado). */
 function KanbanCard({ p, i, active, onOpen, onDelete, onDragStart, onDragEnd, onMove, canPrev, canNext }) {
@@ -436,14 +480,9 @@ function KanbanCard({ p, i, active, onOpen, onDelete, onDragStart, onDragEnd, on
       onDragEnd={onDragEnd}
       className={`group relative overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:-translate-y-0.5 hover:shadow-md"}`}
     >
-      {/* Ações rápidas (hover) */}
-      <div className="absolute right-1.5 top-1.5 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button onClick={(e) => { e.stopPropagation(); onOpen(); }} title="Editar" className="flex h-6 w-6 items-center justify-center rounded-md bg-white/95 text-ink-secondary shadow-sm ring-1 ring-black/10 hover:bg-white hover:text-ink">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
-        </button>
-        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Excluir" className="flex h-6 w-6 items-center justify-center rounded-md bg-white/95 text-red-500 shadow-sm ring-1 ring-black/10 hover:bg-red-500 hover:text-white">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M10 11v6M14 11v6" /></svg>
-        </button>
+      {/* Menu de ações (⋮): Editar / Excluir */}
+      <div className="absolute right-1 top-1 z-20" onClick={(e) => e.stopPropagation()}>
+        <RowMenu onEdit={onOpen} onDelete={onDelete} overlay />
       </div>
       <div className="flex cursor-pointer" role="button" onClick={onOpen}>
         <span className="w-1.5 shrink-0" style={{ background: stripe }} aria-hidden />
@@ -453,7 +492,7 @@ function KanbanCard({ p, i, active, onOpen, onDelete, onDragStart, onDragEnd, on
             <img src={p.images[0]} alt="" className="h-14 w-20 shrink-0 rounded-lg object-cover" />
           ) : (<span className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg bg-black/5 text-ink-muted">🏠</span>)}
           <div className="min-w-0 flex-1">
-            <div className={`truncate text-[13px] font-semibold leading-snug ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique"}</div>
+            <div className={`truncate pr-7 text-[13px] font-semibold leading-snug ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique"}</div>
             <div className="mt-0.5 truncate text-[11px] text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</div>
             {priceTxt && <div className="mt-0.5 truncate text-[13px] font-bold text-primary-dark">{priceTxt}</div>}
             <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -1015,7 +1054,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                         {p.status === "vendido" ? "💰 Vendido" : p.status === "alugado" ? "🔑 Alugado" : p.publicado ? (etapaLabel[lastId] || "No site") : (etapaLabel[p.etapa] || p.etapa || "Captação")}
                       </span>
                       <button onClick={() => togglePublish(i, p)} className={`hidden shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors md:inline-block ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}>{p.publicado ? "Despublicar" : "Publicar"}</button>
-                      <button onClick={() => setOpenIdx(i)} title="Editar" aria-label="Editar" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
+                      <RowMenu onEdit={() => setOpenIdx(i)} onDelete={() => remove(i)} />
                     </div>
                     {(p.cover || p.featured) && (
                       <div className="flex items-center gap-1.5 border-t border-black/5 px-3 py-1.5 md:px-4">
