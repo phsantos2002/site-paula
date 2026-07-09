@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
-import StatusBadge from "../StatusBadge";
 import { formatBRL } from "@/lib/format";
 
 const TABS = [
@@ -414,10 +413,16 @@ function RespPicker({ value, onChange, team, compact }) {
   );
 }
 
-/* Selo de situação (tamanho xs). Exclusividade/Vendido/Alugado sempre; "Disponível"
-   só quando showDisponivel (usado na Vitrine); no funil/lista fica oculto p/ não poluir. */
+/* Selo de situação (admin, tamanho xs). Exclusividade âmbar · Vendido verde · Alugado azul.
+   "Disponível" só quando showDisponivel; senão fica oculto p/ não poluir. */
+const SITUACAO_BADGE = {
+  exclusividade: { label: "EXCLUSIVIDADE", cls: "bg-primary text-ink-cta" },
+  vendido: { label: "VENDIDO", cls: "text-white", style: { background: "#16a34a" } },
+  alugado: { label: "ALUGADO", cls: "text-white", style: { background: "#0ea5e9" } },
+};
 function SituacaoBadge({ status, showDisponivel = false }) {
-  if (status && status !== "disponivel") return <StatusBadge status={status} size="xs" />;
+  const s = SITUACAO_BADGE[status];
+  if (s) return <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${s.cls}`} style={s.style}>{s.label}</span>;
   if (showDisponivel) return <span className="rounded bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2fa03c]">Disponível</span>;
   return null;
 }
