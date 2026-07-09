@@ -828,7 +828,7 @@ function ImoveisTab({ properties, setProperties, data }) {
     };
     setProperties([np, ...properties]);
     setQuickAdd(null);
-    setOpenIdx(0);
+    // Não abre o editor: o card entra como rascunho na lista/funil com o que veio da entrada rápida.
   }
   function move(i, dir) {
     const j = i + dir;
