@@ -1070,13 +1070,13 @@ function ImoveisTab({ properties, setProperties, data }) {
       {/* Entrada rápida de imóvel (infos básicas + upload de fotos e/ou Drive) */}
       {quickAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setQuickAdd(null)}>
-          <div className="flex max-h-[92vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 pt-5">
               <h3 className="text-base font-semibold text-ink">Novo imóvel · entrada rápida</h3>
               <button onClick={() => setQuickAdd(null)} className="rounded-lg px-2 py-1 text-sm text-ink-secondary hover:bg-black/5">✕</button>
             </div>
             <p className="px-5 pb-1 pt-1 text-xs text-ink-muted">Só o básico para começar. O texto e a ficha completa você preenche depois, avançando as etapas.</p>
-            <div className="flex-1 space-y-3 overflow-y-auto px-5 py-3">
+            <div className="min-w-0 flex-1 space-y-3 overflow-y-auto px-5 py-3">
               <Field label="Título (opcional)" value={quickAdd.title} onChange={(v) => setQuickAdd({ ...quickAdd, title: v })} placeholder="Ex: Apartamento no Jardim Aquarius" />
               <div className="grid grid-cols-2 gap-3">
                 <SelectField label="Tipo" value={quickAdd.type} options={TYPES} onChange={(v) => setQuickAdd({ ...quickAdd, type: v })} />
@@ -1090,7 +1090,7 @@ function ImoveisTab({ properties, setProperties, data }) {
               </div>
 
               {/* Upload direto das fotos (vai direto pro site, sem baixar do Drive) */}
-              <div className="rounded-lg border border-black/10 bg-black/[0.02] p-3">
+              <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-black/[0.02] p-3">
                 <MultiImageField images={quickAdd.images || []} onChange={(imgs) => setQuickAdd({ ...quickAdd, images: imgs })} showCover={false} coverImage="" onSetCover={() => {}} />
               </div>
 
@@ -1863,7 +1863,7 @@ function MultiImageField({ images, onChange, coverImage, showCover, onSetCover, 
     onChange(next);
   };
   return (
-    <div>
+    <div className="min-w-0">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-medium text-ink-secondary">Fotos do imóvel <span className="font-normal text-ink-muted">(a 1ª é a principal no site · use ‹ › para ordenar)</span></span>
         {zipName && images.length > 0 && (
@@ -1898,14 +1898,14 @@ function MultiImageField({ images, onChange, coverImage, showCover, onSetCover, 
           );
         })}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <input type="file" accept="image/*,.dng,.heic,.heif,.tif,.tiff,.webp,.avif,.cr2,.cr3,.nef,.arw,.raf,.rw2,.orf,.raw" multiple onChange={handleFiles} className="text-sm text-ink-secondary file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:text-white" />
+      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+        <input type="file" accept="image/*,.dng,.heic,.heif,.tif,.tiff,.webp,.avif,.cr2,.cr3,.nef,.arw,.raf,.rw2,.orf,.raw" multiple onChange={handleFiles} className="w-full max-w-full text-sm text-ink-secondary file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:text-white" />
         {busy && <span className="text-xs text-ink-muted">Enviando...</span>}
       </div>
       {err && <p className="mt-2 text-xs text-red-600">{err}</p>}
-      <div className="mt-2 flex gap-2">
-        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="ou cole uma URL de imagem" className="h-9 flex-1 rounded-lg border border-inputborder px-2 text-xs outline-none focus:border-primary" />
-        <button onClick={() => { if (url.trim()) { onChange([...images, url.trim()]); setUrl(""); } }} className="rounded-lg bg-black/5 px-3 text-sm hover:bg-black/10">Adicionar</button>
+      <div className="mt-2 flex min-w-0 gap-2">
+        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="ou cole uma URL de imagem" className="h-9 min-w-0 flex-1 rounded-lg border border-inputborder px-2 text-xs outline-none focus:border-primary" />
+        <button onClick={() => { if (url.trim()) { onChange([...images, url.trim()]); setUrl(""); } }} className="shrink-0 rounded-lg bg-black/5 px-3 text-sm hover:bg-black/10">Adicionar</button>
       </div>
     </div>
   );
