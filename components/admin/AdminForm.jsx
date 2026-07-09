@@ -616,21 +616,6 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
         </label>
       </div>
 
-      {/* Captação */}
-      <div className="rounded-lg border border-black/10 bg-white p-3">
-        <span className="mb-2 block text-sm font-semibold text-ink-secondary">Captação</span>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-ink-secondary">Data da captação</span>
-            <input type="date" value={p.captacao?.data || ""} onChange={(e) => update(i, { ...p, captacao: { ...(p.captacao || {}), data: e.target.value } })} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary" />
-          </label>
-          <Field label="Capturado por" value={p.captacao?.capturadoPor} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), capturadoPor: v } })} placeholder="Ex: Guilherme" />
-        </div>
-        <div className="mt-3">
-          <TextArea label="Observações da captação" value={p.captacao?.observacoes} onChange={(v) => update(i, { ...p, captacao: { ...(p.captacao || {}), observacoes: v } })} />
-        </div>
-      </div>
-
       {/* Divulgação */}
       <div className="rounded-lg border border-black/10 bg-white p-3">
         <span className="mb-1 block text-sm font-semibold text-ink-secondary">Divulgação <span className="font-normal text-ink-muted">({distribCount(p)}/{DISTRIBUICAO_ITENS.length})</span></span>
