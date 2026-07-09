@@ -478,14 +478,14 @@ function KanbanCard({ p, i, active, onOpen, onDelete, onDragStart, onDragEnd, on
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className={`group relative overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:-translate-y-0.5 hover:shadow-md"}`}
+      style={{ borderLeftColor: stripe }}
+      className={`group relative overflow-hidden rounded-xl border border-l-[6px] border-black/10 bg-white shadow-sm transition active:cursor-grabbing ${active ? "opacity-40" : "hover:-translate-y-0.5 hover:shadow-md"}`}
     >
       {/* Menu de ações (⋮): Editar / Excluir */}
       <div className="absolute right-1 top-1 z-20" onClick={(e) => e.stopPropagation()}>
         <RowMenu onEdit={onOpen} onDelete={onDelete} overlay />
       </div>
       <div className="flex cursor-pointer" role="button" onClick={onOpen}>
-        <span className="w-1.5 shrink-0" style={{ background: stripe }} aria-hidden />
         <div className="flex min-w-0 flex-1 gap-2.5 p-2.5">
           {p.images?.[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
