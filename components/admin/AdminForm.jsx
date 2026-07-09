@@ -160,6 +160,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
   const leadsRef = useRef(leads); leadsRef.current = leads;
   const savingRef = useRef(false);
   const pendingRef = useRef(false);
+  const dirtyRef = useRef(false);
   const timerRef = useRef(null);
   const mountedRef = useRef(false);
 
@@ -172,6 +173,26 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
     setData((d) => ({ ...d, [section]: value }));
   }
 
+  // Envio bruto dos 3 payloads. `keepalive` permite que a requisição sobreviva ao
+  // fechar/recarregar a aba (usado no logout e no visibilitychange).
+  async function persist(sentData, sentProps, sentLeads, keepalive = false) {
+    const base = { method: "POST", headers: { "Content-Type": "application/json" }, ...(keepalive ? { keepalive: true } : {}) };
+    let ok = false, errText = "Erro ao salvar.";
+    try {
+      const [r1, r2, r3] = await Promise.all([
+        fetch("/api/admin/save", { ...base, body: JSON.stringify(sentData) }),
+        fetch("/api/admin/properties", { ...base, body: JSON.stringify({ properties: sentProps }) }),
+        fetch("/api/admin/leads", { ...base, body: JSON.stringify({ leads: sentLeads }) }),
+      ]);
+      const j1 = await r1.json().catch(() => ({}));
+      const j2 = await r2.json().catch(() => ({}));
+      const j3 = await r3.json().catch(() => ({}));
+      ok = !!(j1.ok && j2.ok && j3.ok);
+      errText = j1.error || j2.error || j3.error || errText;
+    } catch { errText = "Sem conexão."; }
+    return { ok, errText };
+  }
+
   // Persiste tudo (conteúdo + imóveis + contatos). Sem sincronizar a resposta de volta
   // para o estado — o cliente é a fonte da verdade e isso evita loop com o auto-save.
   async function flush(manual = false) {
@@ -180,19 +201,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
     setSaveState("saving");
     if (manual) setMsg(null);
     const sentData = dataRef.current, sentProps = propsRef.current, sentLeads = leadsRef.current;
-    let ok = false, errText = "Erro ao salvar.";
-    try {
-      const [r1, r2, r3] = await Promise.all([
-        fetch("/api/admin/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(sentData) }),
-        fetch("/api/admin/properties", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ properties: sentProps }) }),
-        fetch("/api/admin/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ leads: sentLeads }) }),
-      ]);
-      const j1 = await r1.json().catch(() => ({}));
-      const j2 = await r2.json().catch(() => ({}));
-      const j3 = await r3.json().catch(() => ({}));
-      ok = !!(j1.ok && j2.ok && j3.ok);
-      errText = j1.error || j2.error || j3.error || errText;
-    } catch { errText = "Sem conexão."; }
+    const { ok, errText } = await persist(sentData, sentProps, sentLeads);
     savingRef.current = false;
     // Mudou algo enquanto salvava? Continua sujo -> salva de novo em breve.
     const changedDuring = dataRef.current !== sentData || propsRef.current !== sentProps || leadsRef.current !== sentLeads;
@@ -203,6 +212,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
       pendingRef.current = false;
       scheduleSave(500);
     } else {
+      dirtyRef.current = false;
       setSaveState("saved");
       if (manual) setMsg({ type: "ok", text: "Tudo salvo!" });
     }
@@ -210,14 +220,17 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
 
   function scheduleSave(delay = 1200) {
     clearTimeout(timerRef.current);
+    dirtyRef.current = true;
     setSaveState("dirty");
     timerRef.current = setTimeout(() => flush(false), delay);
   }
 
   async function logout() {
     clearTimeout(timerRef.current);
-    await flush(false); // não sai sem salvar
-    await fetch("/api/admin/logout", { method: "POST" });
+    // Salva o estado MAIS RECENTE com keepalive (sobrevive ao reload), sem depender
+    // do flush guardado — assim não perde edições feitas durante um save em andamento.
+    try { await persist(dataRef.current, propsRef.current, leadsRef.current, true); } catch {}
+    await fetch("/api/admin/logout", { method: "POST", keepalive: true });
     window.location.reload();
   }
 
@@ -229,11 +242,22 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, properties, leads]);
 
-  // Salva ao minimizar/fechar a aba (celular) para não perder nada pendente.
+  // Salva ao minimizar/fechar a aba (celular/desktop) para não perder nada pendente.
+  // keepalive garante que o POST complete mesmo se a aba for fechada em seguida.
   useEffect(() => {
-    const onHide = () => { if (document.visibilityState === "hidden") { clearTimeout(timerRef.current); flush(false); } };
+    const onHide = () => {
+      if (document.visibilityState !== "hidden" || !dirtyRef.current) return;
+      clearTimeout(timerRef.current);
+      persist(dataRef.current, propsRef.current, leadsRef.current, true)
+        .then((r) => { if (r.ok) dirtyRef.current = false; })
+        .catch(() => {});
+    };
     document.addEventListener("visibilitychange", onHide);
-    return () => document.removeEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onHide);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -361,7 +385,7 @@ function ContatosTab({ leads, setLeads }) {
   return (
     <Card title={`Contatos recebidos (${leads.length}${unread ? ` · ${unread} novo(s)` : ""})`}>
       <p className="-mt-2 mb-2 text-xs text-ink-muted">
-        Mensagens enviadas pelo formulário do site. Lembre de clicar em <strong>Salvar alterações</strong> após marcar como lido ou excluir.
+        Mensagens enviadas pelo formulário do site. As alterações são <strong>salvas automaticamente</strong>.
       </p>
       {leads.length === 0 ? (
         <div className="rounded-lg border border-dashed border-ink-muted p-8 text-center text-sm text-ink-muted">
