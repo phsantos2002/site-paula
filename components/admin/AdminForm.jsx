@@ -806,22 +806,24 @@ function ImoveisTab({ properties, setProperties, data }) {
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
   function add() {
-    // Entrada rápida: infos básicas + fotos (upload direto) e/ou link do Drive.
-    setQuickAdd({ title: "", type: "Apartamento", neighborhood: "", city: "São José dos Campos", textoBruto: "", images: [], driveFotos: "", driveVideo: "" });
+    // Entrada rápida: infos essenciais + fotos. O título e a ficha completa vêm depois.
+    setQuickAdd({ type: "Apartamento", neighborhood: "", city: "São José dos Campos", operation: ["Venda"], exclusividade: false, textoBruto: "", images: [], driveFotos: "", driveVideo: "" });
   }
   function createFromQuick() {
     const qa = quickAdd;
-    if (!qa) return;
+    if (!qa || !qa.textoBruto?.trim()) return; // "Informações do imóvel" é obrigatório
     const code = nextCode(properties);
     const owner = funnel[0]?.owner || "";
     const np = {
       ...emptyProperty(code),
       etapa: firstId,
       responsavel: owner,
-      title: qa.title || "",
       type: qa.type || "Apartamento",
       neighborhood: qa.neighborhood || "",
       city: qa.city || "",
+      operation: Array.isArray(qa.operation) && qa.operation.length ? qa.operation : ["Venda"],
+      status: qa.exclusividade ? "exclusividade" : "disponivel",
+      proprietario: { nome: "", contato: "", exclusividade: !!qa.exclusividade },
       textoBruto: qa.textoBruto || "",
       images: Array.isArray(qa.images) ? qa.images : [],
       driveLinks: { fotos: qa.driveFotos || "", video: qa.driveVideo || "" },
@@ -1075,18 +1077,42 @@ function ImoveisTab({ properties, setProperties, data }) {
               <h3 className="text-base font-semibold text-ink">Novo imóvel · entrada rápida</h3>
               <button onClick={() => setQuickAdd(null)} className="rounded-lg px-2 py-1 text-sm text-ink-secondary hover:bg-black/5">✕</button>
             </div>
-            <p className="px-5 pb-1 pt-1 text-xs text-ink-muted">Só o básico para começar. O texto e a ficha completa você preenche depois, avançando as etapas.</p>
+            <p className="px-5 pb-1 pt-1 text-xs text-ink-muted">Preencha o essencial. O título e a ficha completa do site você ajusta depois, no editor do imóvel.</p>
             <div className="min-w-0 flex-1 space-y-3 overflow-y-auto px-5 py-3">
-              <Field label="Título (opcional)" value={quickAdd.title} onChange={(v) => setQuickAdd({ ...quickAdd, title: v })} placeholder="Ex: Apartamento no Jardim Aquarius" />
               <div className="grid grid-cols-2 gap-3">
                 <SelectField label="Tipo" value={quickAdd.type} options={TYPES} onChange={(v) => setQuickAdd({ ...quickAdd, type: v })} />
                 <Field label="Bairro" value={quickAdd.neighborhood} onChange={(v) => setQuickAdd({ ...quickAdd, neighborhood: v })} />
               </div>
               <Field label="Cidade" value={quickAdd.city} onChange={(v) => setQuickAdd({ ...quickAdd, city: v })} />
 
+              {/* Operação */}
               <div>
-                <TextArea label="Texto bruto (opcional)" value={quickAdd.textoBruto} onChange={(v) => setQuickAdd({ ...quickAdd, textoBruto: v })} />
-                <p className="mt-1 text-xs text-ink-muted">Descrição solta do imóvel, do jeito que vier. Depois vira a ficha completa do site.</p>
+                <span className="mb-1.5 block text-sm font-medium text-ink-secondary">Operação</span>
+                <div className="flex flex-wrap gap-2">
+                  {["Venda", "Aluguel"].map((op) => {
+                    const on = (quickAdd.operation || []).includes(op);
+                    return (
+                      <button
+                        key={op}
+                        type="button"
+                        onClick={() => { const set = new Set(quickAdd.operation || []); on ? set.delete(op) : set.add(op); setQuickAdd({ ...quickAdd, operation: [...set] }); }}
+                        className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${on ? "border-primary bg-primary text-ink-cta" : "border-black/10 bg-white text-ink-secondary hover:bg-black/5"}`}
+                      >{op === "Aluguel" ? "Locação (aluguel)" : "Venda"}</button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Exclusividade */}
+              <label className="flex items-start gap-2 rounded-lg border border-black/10 bg-black/[0.02] p-3 text-sm text-ink-secondary">
+                <input type="checkbox" checked={!!quickAdd.exclusividade} onChange={(e) => setQuickAdd({ ...quickAdd, exclusividade: e.target.checked })} className="mt-0.5 h-4 w-4 accent-primary" />
+                <span><strong>Imóvel exclusivo</strong><span className="block text-xs text-ink-muted">Exclusivo da corretora (nenhuma outra pessoa/corretora trabalha nele). Mostra o selo EXCLUSIVIDADE no site.</span></span>
+              </label>
+
+              {/* Informações do imóvel (obrigatório) */}
+              <div>
+                <TextArea label="Informações do imóvel *" value={quickAdd.textoBruto} onChange={(v) => setQuickAdd({ ...quickAdd, textoBruto: v })} />
+                <p className="mt-1 text-xs text-ink-muted">Descrição solta do imóvel, do jeito que vier (quartos, metragem, valor, diferenciais…). <strong>Obrigatório.</strong> Depois vira a ficha completa do site.</p>
               </div>
 
               {/* Upload direto das fotos (vai direto pro site, sem baixar do Drive) */}
@@ -1104,7 +1130,7 @@ function ImoveisTab({ properties, setProperties, data }) {
             </div>
             <div className="flex items-center justify-end gap-2 border-t border-black/10 px-5 py-4">
               <button onClick={() => setQuickAdd(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-ink-secondary hover:bg-black/5">Cancelar</button>
-              <button onClick={createFromQuick} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Criar imóvel</button>
+              <button onClick={createFromQuick} disabled={!quickAdd.textoBruto?.trim()} title={!quickAdd.textoBruto?.trim() ? "Preencha as informações do imóvel" : undefined} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50">Criar imóvel</button>
             </div>
           </div>
         </div>
