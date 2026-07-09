@@ -520,7 +520,15 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
           </label>
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-ink-secondary">Etapa (funil)</span>
-            {p.publicado ? (
+            {p.status === "vendido" ? (
+              <div className="flex h-10 items-center gap-1.5 rounded-lg border border-[#16a34a]/30 bg-[#eaf7ee] px-3 text-sm font-semibold text-[#16a34a]" title="Definido pela situação (Vendido)">
+                💰 Vendido
+              </div>
+            ) : p.status === "alugado" ? (
+              <div className="flex h-10 items-center gap-1.5 rounded-lg border border-[#0ea5e9]/40 bg-[#e6f6fd] px-3 text-sm font-semibold text-[#0284c7]" title="Definido pela situação (Alugado)">
+                🔑 Alugado
+              </div>
+            ) : p.publicado ? (
               <div className="flex h-10 items-center gap-1.5 rounded-lg border border-[#16a34a]/30 bg-[#eaf7ee] px-3 text-sm font-semibold text-[#16a34a]" title="Definido pela publicação — use o botão Rascunho para voltar à produção">
                 ✅ {lastLabel}
               </div>
