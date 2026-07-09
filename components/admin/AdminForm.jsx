@@ -1113,7 +1113,7 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
                 {p.price > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.price)}<span className="font-medium text-ink-muted"> · venda</span></span>}
                 {p.rentPrice > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.rentPrice)}/mês<span className="font-medium text-ink-muted"> · aluguel</span></span>}
                 {p.status && p.status !== "disponivel"
-                  ? <StatusBadge status={p.status} />
+                  ? <StatusBadge status={p.status} size="xs" />
                   : <span className="rounded bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2fa03c]">Disponível</span>}
               </div>
             </div>

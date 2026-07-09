@@ -7,11 +7,12 @@ const STATUS_BADGE = {
   // "disponivel" (e qualquer outro) não gera badge.
 };
 
-export default function StatusBadge({ status, className = "" }) {
+export default function StatusBadge({ status, className = "", size = "md" }) {
   const s = STATUS_BADGE[status];
   if (!s) return null;
+  const sz = size === "xs" ? "px-1.5 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]";
   return (
-    <span className={`rounded px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${s.className} ${className}`}>
+    <span className={`rounded font-semibold uppercase tracking-wide ${sz} ${s.className} ${className}`}>
       {s.label}
     </span>
   );
