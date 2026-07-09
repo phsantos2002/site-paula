@@ -461,7 +461,9 @@ function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragE
             {priceTxt && <div className="mt-0.5 truncate text-[11px] font-semibold text-primary-dark">{priceTxt}</div>}
             <div className="mt-1 flex flex-wrap items-center gap-1">
               <SituacaoBadge status={p.status} />
-              {p.publicado && <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>}
+              {p.publicado
+                ? <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>
+                : <span className="inline-flex items-center gap-1 rounded-full bg-[#fff3e0] px-1.5 py-0.5 text-[10px] font-semibold text-[#b7791f]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffa200]" />rascunho</span>}
               {p.cover && <span title="Capa da home" className="text-[11px]">🏠</span>}
               {p.featured && <span title="Destaque" className="text-[11px]">⭐</span>}
             </div>
