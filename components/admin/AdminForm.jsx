@@ -1117,7 +1117,7 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {p.price > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.price)}<span className="font-medium text-ink-muted"> · venda</span></span>}
                 {p.rentPrice > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.rentPrice)}/mês<span className="font-medium text-ink-muted"> · aluguel</span></span>}
-                <SituacaoBadge status={p.status} showDisponivel />
+                <SituacaoBadge status={p.status} />
               </div>
             </div>
             <button onClick={() => onEdit(i)} title="Editar" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
