@@ -758,8 +758,8 @@ function ImoveisTab({ properties, setProperties, data }) {
   function update(i, np) { const next = properties.slice(); next[i] = np; setProperties(next); }
   function remove(i) { if (!confirm("Excluir este imóvel?")) return; setProperties(properties.filter((_, idx) => idx !== i)); setOpenIdx(null); }
   function add() {
-    // Entrada rápida: infos básicas + link do Drive (o resto preenche depois, por etapa).
-    setQuickAdd({ title: "", type: "Apartamento", neighborhood: "", city: "São José dos Campos", driveFotos: "", driveVideo: "" });
+    // Entrada rápida: infos básicas + fotos (upload direto) e/ou link do Drive.
+    setQuickAdd({ title: "", type: "Apartamento", neighborhood: "", city: "São José dos Campos", images: [], driveFotos: "", driveVideo: "" });
   }
   function createFromQuick() {
     const qa = quickAdd;
@@ -774,6 +774,7 @@ function ImoveisTab({ properties, setProperties, data }) {
       type: qa.type || "Apartamento",
       neighborhood: qa.neighborhood || "",
       city: qa.city || "",
+      images: Array.isArray(qa.images) ? qa.images : [],
       driveLinks: { fotos: qa.driveFotos || "", video: qa.driveVideo || "" },
     };
     setProperties([np, ...properties]);
@@ -1025,26 +1026,37 @@ function ImoveisTab({ properties, setProperties, data }) {
         </div>
       )}
 
-      {/* Entrada rápida de imóvel (infos básicas + Drive) */}
+      {/* Entrada rápida de imóvel (infos básicas + upload de fotos e/ou Drive) */}
       {quickAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setQuickAdd(null)}>
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-1 flex items-center justify-between">
+          <div className="flex max-h-[92vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 pt-5">
               <h3 className="text-base font-semibold text-ink">Novo imóvel · entrada rápida</h3>
               <button onClick={() => setQuickAdd(null)} className="rounded-lg px-2 py-1 text-sm text-ink-secondary hover:bg-black/5">✕</button>
             </div>
-            <p className="mb-4 text-xs text-ink-muted">Só o básico para começar. O texto e a ficha completa você preenche depois, avançando as etapas.</p>
-            <div className="space-y-3">
+            <p className="px-5 pb-1 pt-1 text-xs text-ink-muted">Só o básico para começar. O texto e a ficha completa você preenche depois, avançando as etapas.</p>
+            <div className="flex-1 space-y-3 overflow-y-auto px-5 py-3">
               <Field label="Título (opcional)" value={quickAdd.title} onChange={(v) => setQuickAdd({ ...quickAdd, title: v })} placeholder="Ex: Apartamento no Jardim Aquarius" />
               <div className="grid grid-cols-2 gap-3">
                 <SelectField label="Tipo" value={quickAdd.type} options={TYPES} onChange={(v) => setQuickAdd({ ...quickAdd, type: v })} />
                 <Field label="Bairro" value={quickAdd.neighborhood} onChange={(v) => setQuickAdd({ ...quickAdd, neighborhood: v })} />
               </div>
               <Field label="Cidade" value={quickAdd.city} onChange={(v) => setQuickAdd({ ...quickAdd, city: v })} />
-              <DriveLinkField label="Link da pasta de fotos (Drive)" value={quickAdd.driveFotos} onChange={(v) => setQuickAdd({ ...quickAdd, driveFotos: v })} />
-              <DriveLinkField label="Link do vídeo (Drive) · opcional" value={quickAdd.driveVideo} onChange={(v) => setQuickAdd({ ...quickAdd, driveVideo: v })} />
+
+              {/* Upload direto das fotos (vai direto pro site, sem baixar do Drive) */}
+              <div className="rounded-lg border border-black/10 bg-black/[0.02] p-3">
+                <MultiImageField images={quickAdd.images || []} onChange={(imgs) => setQuickAdd({ ...quickAdd, images: imgs })} showCover={false} coverImage="" onSetCover={() => {}} />
+              </div>
+
+              <details className="rounded-lg border border-black/10 bg-white p-3">
+                <summary className="cursor-pointer text-sm font-medium text-ink-secondary">Links do Drive (opcional)</summary>
+                <div className="mt-3 space-y-3">
+                  <DriveLinkField label="Link da pasta de fotos (Drive)" value={quickAdd.driveFotos} onChange={(v) => setQuickAdd({ ...quickAdd, driveFotos: v })} />
+                  <DriveLinkField label="Link do vídeo (Drive)" value={quickAdd.driveVideo} onChange={(v) => setQuickAdd({ ...quickAdd, driveVideo: v })} />
+                </div>
+              </details>
             </div>
-            <div className="mt-5 flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 border-t border-black/10 px-5 py-4">
               <button onClick={() => setQuickAdd(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-ink-secondary hover:bg-black/5">Cancelar</button>
               <button onClick={createFromQuick} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Criar imóvel</button>
             </div>
