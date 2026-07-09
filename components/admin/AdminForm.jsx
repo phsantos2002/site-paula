@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from "react";
 import StatusBadge from "../StatusBadge";
+import { formatBRL } from "@/lib/format";
 
 const TABS = [
   { id: "contatos", label: "Contatos", icon: "M22 5H2v14h20zM2 6l10 7 10-7" },
@@ -670,6 +671,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   const [statusFilter, setStatusFilter] = useState("");
   const [etapaFilter, setEtapaFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [divulgacaoFilter, setDivulgacaoFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState("lista");
@@ -716,12 +718,13 @@ function ImoveisTab({ properties, setProperties, data }) {
     if (statusFilter && (p.status || "disponivel") !== statusFilter) return false;
     if (etapaFilter && (p.etapa || "") !== etapaFilter) return false;
     if (typeFilter && p.type !== typeFilter) return false;
+    if (divulgacaoFilter && !p.distribuicao?.[divulgacaoFilter]) return false;
     if (filter === "rascunhos" && p.publicado) return false;
     if (filter === "publicados" && !p.publicado) return false;
     if (filter === "distrib_pendente" && !(p.publicado && DISTRIBUICAO_ITENS.some((it) => !p.distribuicao?.[it.key]))) return false;
     return true;
   }
-  function clearFilters() { setFilter("all"); setRespFilter(""); setStatusFilter(""); setEtapaFilter(""); setTypeFilter(""); }
+  function clearFilters() { setFilter("all"); setRespFilter(""); setStatusFilter(""); setEtapaFilter(""); setTypeFilter(""); setDivulgacaoFilter(""); }
   function togglePublish(i, p) {
     // Ao publicar, avança para a última etapa; ao despublicar, mantém a etapa.
     update(i, { ...p, publicado: !p.publicado, etapa: !p.publicado ? lastId : p.etapa });
@@ -762,7 +765,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   }
 
   // Reordenar só faz sentido na Lista completa (define a ordem da capa/destaques na home).
-  const showReorder = view === "lista" && filter === "all" && !respFilter && !statusFilter && !etapaFilter && !typeFilter && !query.trim();
+  const showReorder = view === "lista" && filter === "all" && !respFilter && !statusFilter && !etapaFilter && !typeFilter && !divulgacaoFilter && !query.trim();
   const q = query.trim().toLowerCase();
   const matchesQuery = (p) => !q || `${p.title} ${p.code} ${p.neighborhood} ${p.city}`.toLowerCase().includes(q);
   const rows = properties.map((p, i) => ({ p, i })).filter(({ p }) => isVisible(p) && matchesQuery(p));
@@ -785,6 +788,8 @@ function ImoveisTab({ properties, setProperties, data }) {
   const situacaoOptions = [{ value: "", label: "Todas" }, ...STATUS_OPTIONS];
   const etapaFilterOptions = [{ value: "", label: "Todas" }, ...funnel.map((f) => ({ value: f.id, label: f.label }))];
   const typeFilterOptions = [{ value: "", label: "Todos" }, ...TYPES.map((t) => ({ value: t, label: t }))];
+  const DIVULG_SHORT = { carrossel: "Carrossel", reels: "Reels", anuncio: "Anúncio" };
+  const divulgacaoOptions = [{ value: "", label: "Todas" }, ...DISTRIBUICAO_ITENS.map((it) => ({ value: it.key, label: `✓ ${DIVULG_SHORT[it.key] || it.label}` }))];
   const respFilterOptions = [{ value: "", label: "Todos" }, ...team.map((t) => ({ value: t.id, label: `${t.emoji} ${t.name} (${respCounts[t.id]})` }))];
   // Filtros ativos (para o contador e as pílulas removíveis)
   const activePills = [];
@@ -792,6 +797,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   if (statusFilter) activePills.push({ key: "situacao", label: STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label, clear: () => setStatusFilter("") });
   if (etapaFilter) activePills.push({ key: "etapa", label: etapaLabel[etapaFilter] || etapaFilter, clear: () => setEtapaFilter("") });
   if (typeFilter) activePills.push({ key: "tipo", label: typeFilter, clear: () => setTypeFilter("") });
+  if (divulgacaoFilter) activePills.push({ key: "divulg", label: `Divulg: ${DIVULG_SHORT[divulgacaoFilter] || divulgacaoFilter}`, clear: () => setDivulgacaoFilter("") });
   if (respFilter) activePills.push({ key: "resp", label: teamBy[respFilter]?.name || respFilter, clear: () => setRespFilter("") });
   const activeCount = activePills.length;
 
@@ -835,6 +841,7 @@ function ImoveisTab({ properties, setProperties, data }) {
             <FilterGroup label="Situação" value={statusFilter} onChange={setStatusFilter} options={situacaoOptions} />
             <FilterGroup label="Etapa do funil" value={etapaFilter} onChange={setEtapaFilter} options={etapaFilterOptions} />
             <FilterGroup label="Tipo de imóvel" value={typeFilter} onChange={setTypeFilter} options={typeFilterOptions} />
+            <FilterGroup label="Divulgação (feito)" value={divulgacaoFilter} onChange={setDivulgacaoFilter} options={divulgacaoOptions} />
             <FilterGroup label="Responsável" value={respFilter} onChange={setRespFilter} options={respFilterOptions} />
           </div>
         )}
@@ -940,6 +947,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                         <span className="min-w-0">
                           <span className={`block truncate text-sm font-medium ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique para preencher"}</span>
                           <span className="block truncate text-xs text-ink-muted">Cód: {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
+                          {(p.price > 0 || p.rentPrice > 0) && <span className="block truncate text-xs font-semibold text-primary-dark">{p.price > 0 ? formatBRL(p.price) : `${formatBRL(p.rentPrice)}/mês`}</span>}
                           <span className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
                             {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
                             <ResponsavelChip member={teamBy[p.responsavel]} size="xs" />
@@ -1433,9 +1441,16 @@ function MultiImageField({ images, onChange, coverImage, showCover, onSetCover }
     setBusy(false);
     e.target.value = "";
   }
+  const move = (idx, dir) => {
+    const j = idx + dir;
+    if (j < 0 || j >= images.length) return;
+    const next = images.slice();
+    [next[idx], next[j]] = [next[j], next[idx]];
+    onChange(next);
+  };
   return (
     <div>
-      <span className="mb-1 block text-sm font-medium text-ink-secondary">Fotos do imóvel</span>
+      <span className="mb-1 block text-sm font-medium text-ink-secondary">Fotos do imóvel <span className="font-normal text-ink-muted">(a 1ª é a principal no site · use ‹ › para ordenar)</span></span>
       <div className="flex flex-wrap gap-2">
         {images.map((src, idx) => {
           const isCover = showCover && coverImage === src;
@@ -1443,6 +1458,11 @@ function MultiImageField({ images, onChange, coverImage, showCover, onSetCover }
             <div key={idx} className={`relative h-24 w-32 overflow-hidden rounded-lg border-2 ${isCover ? "border-primary" : "border-black/10"}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={src} alt="" className="h-full w-full object-cover" />
+              <span className="absolute left-1 top-1 flex items-center gap-0.5">
+                <button onClick={() => move(idx, -1)} disabled={idx === 0} title="Mover para trás" className="flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-xs text-white disabled:opacity-30">‹</button>
+                <button onClick={() => move(idx, 1)} disabled={idx === images.length - 1} title="Mover para frente" className="flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-xs text-white disabled:opacity-30">›</button>
+                <span className="rounded-full bg-black/70 px-1.5 text-[10px] font-semibold text-white">{idx + 1}</span>
+              </span>
               <button onClick={() => onChange(images.filter((_, j) => j !== idx))} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-xs text-white">×</button>
               {showCover && (
                 <button
