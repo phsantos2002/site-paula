@@ -830,6 +830,8 @@ function ImoveisTab({ properties, setProperties, data }) {
     };
     setProperties([np, ...properties]);
     setQuickAdd(null);
+    // Volta a tela ao topo: o novo rascunho entra no início da lista/funil.
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     // Não abre o editor: o card entra como rascunho na lista/funil com o que veio da entrada rápida.
   }
   function move(i, dir) {
