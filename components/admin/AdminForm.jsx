@@ -530,24 +530,6 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
   const lastLabel = etapaOptions.find((o) => o.value === lastId)?.label || "No site";
   return (
     <div className="space-y-4">
-      {/* Progresso do imóvel (3 marcos: Drive → Texto → Ficha) */}
-      <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 bg-black/[0.02] p-2.5">
-        <span className="text-xs font-semibold text-ink-muted">Cód {p.code}</span>
-        <div className="flex items-center gap-1">
-          {STEPS.map((s, idx) => {
-            const ok = s.done(p);
-            return (
-              <Fragment key={s.key}>
-                {idx > 0 && <span className="h-px w-3 bg-black/10" />}
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${ok ? "bg-[#e8f8ea] text-[#2fa03c]" : "bg-black/5 text-ink-muted"}`}>
-                  <span>{ok ? "✓" : idx + 1}</span>{s.emoji}<span className="hidden sm:inline">{s.short}</span>
-                </span>
-              </Fragment>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Fluxo de trabalho: responsável + etapa + situação */}
       <div className="rounded-lg border border-black/10 bg-white p-3">
         <span className="mb-2 block text-sm font-semibold text-ink-secondary">Fluxo de trabalho</span>
