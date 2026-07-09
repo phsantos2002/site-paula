@@ -667,7 +667,7 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
       <TextArea label="Instalações do imóvel (uma por linha)" value={(p.features || []).join("\n")} onChange={(v) => update(i, { ...p, features: linesToArray(v) })} />
       <TextArea label="Instalações do condomínio (uma por linha)" value={(p.condoFeatures || []).join("\n")} onChange={(v) => update(i, { ...p, condoFeatures: linesToArray(v) })} />
 
-      <MultiImageField images={p.images || []} onChange={(imgs) => update(i, { ...p, images: imgs })} coverImage={p.coverImage} showCover={!!p.cover} onSetCover={(src) => update(i, { ...p, coverImage: src })} />
+      <MultiImageField images={p.images || []} onChange={(imgs) => update(i, { ...p, images: imgs })} coverImage={p.coverImage} showCover={!!p.cover} onSetCover={(src) => update(i, { ...p, coverImage: src })} zipName={`imovel-${p.code}`} />
       <button onClick={() => remove(i)} className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Excluir imóvel</button>
     </div>
   );
@@ -1466,10 +1466,27 @@ function RodapeTab({ data, patch }) {
 
 /* ===================== Multi imagem (imóveis) ===================== */
 
-function MultiImageField({ images, onChange, coverImage, showCover, onSetCover }) {
+function MultiImageField({ images, onChange, coverImage, showCover, onSetCover, zipName }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [url, setUrl] = useState("");
+  const [zipBusy, setZipBusy] = useState(false);
+  async function downloadZip() {
+    setZipBusy(true);
+    try {
+      const res = await fetch("/api/admin/zip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images, name: zipName }) });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); alert(j.error || "Não foi possível gerar o ZIP."); setZipBusy(false); return; }
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${zipName || "imovel"}-fotos.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    } catch { alert("Erro ao baixar as fotos."); }
+    setZipBusy(false);
+  }
   async function handleFiles(e) {
     const files = [...(e.target.files || [])];
     if (!files.length) return;
@@ -1494,7 +1511,15 @@ function MultiImageField({ images, onChange, coverImage, showCover, onSetCover }
   };
   return (
     <div>
-      <span className="mb-1 block text-sm font-medium text-ink-secondary">Fotos do imóvel <span className="font-normal text-ink-muted">(a 1ª é a principal no site · use ‹ › para ordenar)</span></span>
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm font-medium text-ink-secondary">Fotos do imóvel <span className="font-normal text-ink-muted">(a 1ª é a principal no site · use ‹ › para ordenar)</span></span>
+        {zipName && images.length > 0 && (
+          <button type="button" onClick={downloadZip} disabled={zipBusy} className="inline-flex items-center gap-1.5 rounded-lg border border-black/15 bg-white px-3 py-1.5 text-xs font-semibold text-ink-secondary hover:bg-black/5 disabled:opacity-60">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+            {zipBusy ? "Gerando ZIP..." : `Baixar todas (.zip · ${images.length})`}
+          </button>
+        )}
+      </div>
       <div className="flex flex-wrap gap-2">
         {images.map((src, idx) => {
           const isCover = showCover && coverImage === src;
