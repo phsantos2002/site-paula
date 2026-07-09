@@ -6,6 +6,7 @@ import { formatBRL } from "@/lib/format";
 const TABS = [
   { id: "imoveis", label: "Imóveis", icon: "M3 11l9-8 9 8M5 9.5V21h14V9.5" },
   { id: "equipe", label: "Equipe & Funil", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
+  { id: "template", label: "Templates", icon: "M3 3h18v18H3zM3 9h18M9 21V9" },
   { id: "capa", label: "Capa", icon: "M3 4h18v16H3zM3 16l5-5 4 4 3-3 6 6M8 9a1 1 0 1 0 0 .01" },
   { id: "marca", label: "Marca & Cores", icon: "M20.6 12.6 12 4H4v8l8.6 8.6a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8zM7.5 7.5h.01" },
   { id: "menu", label: "Menu & Contato", icon: "M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z" },
@@ -257,6 +258,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
           {tab === "contatos" && <ContatosTab leads={leads} setLeads={setLeads} />}
           {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setProperties} data={data} />}
           {tab === "equipe" && <EquipeTab data={data} setSection={setSection} />}
+          {tab === "template" && <TemplatesTab data={data} setSection={setSection} />}
           {tab === "capa" && <CapaTab data={data} patch={patch} />}
           {tab === "marca" && <MarcaTab data={data} patch={patch} />}
           {tab === "menu" && <MenuTab data={data} patch={patch} setSection={setSection} />}
@@ -1193,6 +1195,89 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
         </select>
       )}
     </div>
+  );
+}
+
+/* ===================== TEMPLATES (galeria de temas) ===================== */
+
+// Registro de templates do site. "classico" = o layout atual (no ar). Novos entram aqui.
+const TEMPLATES = [
+  { id: "classico", name: "Clássico", tagline: "no ar hoje", desc: "Elegante e âmbar, com carrossel no topo e foco nos imóveis. É o visual atual do site.", available: true },
+  { id: "moderno", name: "Moderno", tagline: "em breve", desc: "Layout mais amplo e minimalista, com fotos grandes e tipografia forte.", available: false, accent: "#0f172a" },
+  { id: "vitrine", name: "Vitrine", tagline: "em breve", desc: "Home em grade de destaques, pensada para muitos imóveis e busca rápida.", available: false, accent: "#0ea5e9" },
+];
+
+// Mini mockup do site (usa a cor de destaque do template).
+function TemplatePreview({ accent }) {
+  return (
+    <div className="aspect-[16/10] w-full overflow-hidden rounded-lg border border-black/10 bg-white shadow-inner">
+      <div className="flex h-5 items-center justify-between px-2">
+        <div className="h-1.5 w-8 rounded-full" style={{ background: accent }} />
+        <div className="flex items-center gap-1">
+          <span className="h-1 w-3 rounded bg-black/15" />
+          <span className="h-1 w-3 rounded bg-black/15" />
+          <span className="h-1.5 w-5 rounded-full" style={{ background: accent }} />
+        </div>
+      </div>
+      <div className="mx-2 h-10 rounded" style={{ background: `linear-gradient(135deg, ${accent}44, ${accent}11)` }} />
+      <div className="relative">
+        <div className="absolute inset-x-4 -top-2 h-3 rounded-full bg-white shadow ring-1 ring-black/10" />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-1.5 px-2">
+        {[0, 1, 2].map((k) => (
+          <div key={k} className="overflow-hidden rounded bg-black/[0.03]">
+            <div className="h-6 bg-black/10" />
+            <div className="space-y-0.5 p-1">
+              <div className="h-1 w-full rounded bg-black/10" />
+              <div className="h-1 w-2/3 rounded" style={{ background: accent }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TemplatesTab({ data, setSection }) {
+  const current = data.template || "classico";
+  return (
+    <Card title="Templates do site">
+      <p className="-mt-2 text-sm text-ink-muted">Escolha o visual do seu site, como uma loja de temas. Ao trocar de template, <strong>todo o seu conteúdo é mantido</strong> (imóveis, marca, cores, textos, contatos) — muda só o layout.</p>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {TEMPLATES.map((t) => {
+          const accent = t.id === "classico" ? (data.colors?.primary || "#F6BC41") : (t.accent || "#111827");
+          const active = current === t.id;
+          return (
+            <div key={t.id} className={`flex flex-col overflow-hidden rounded-xl border bg-white transition ${active ? "border-primary ring-2 ring-primary/30" : "border-black/10"}`}>
+              <div className="relative p-3">
+                <div className={t.available ? "" : "opacity-50 grayscale"}><TemplatePreview accent={accent} /></div>
+                {active && <span className="absolute right-4 top-4 rounded-full bg-[#16a34a] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">✓ Ativo</span>}
+                {!active && !t.available && <span className="absolute right-4 top-4 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Em breve</span>}
+              </div>
+              <div className="flex flex-1 flex-col px-4 pb-4">
+                <div className="flex items-baseline gap-2">
+                  <h3 className="font-poppins text-base font-semibold text-ink">{t.name}</h3>
+                  <span className="text-xs text-ink-muted">· {t.tagline}</span>
+                </div>
+                <p className="mt-1 flex-1 text-xs leading-relaxed text-ink-muted">{t.desc}</p>
+                <div className="mt-3">
+                  {t.available ? (
+                    active ? (
+                      <button disabled className="w-full rounded-lg bg-black/5 py-2 text-sm font-semibold text-ink-secondary">Template ativo</button>
+                    ) : (
+                      <button onClick={() => setSection("template", t.id)} className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Usar este template</button>
+                    )
+                  ) : (
+                    <button disabled className="w-full rounded-lg border border-dashed border-black/15 py-2 text-sm font-medium text-ink-muted">Em breve</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-1 rounded-lg bg-black/[0.03] p-3 text-xs text-ink-muted">O template define a <strong>estrutura visual</strong> das páginas. As cores, a marca e os textos continuam sendo ajustados nas abas <strong>Marca &amp; Cores</strong> e <strong>Seções da Home</strong>, e valem para qualquer template.</p>
+    </Card>
   );
 }
 
