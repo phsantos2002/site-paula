@@ -68,7 +68,7 @@ function DistribDots({ p }) {
 // Três marcos de preenchimento do imóvel, espelhando o fluxo da equipe:
 // 1- Material no Drive · 2- Texto bruto · 3- Ficha do site.
 const STEPS = [
-  { key: "drive", short: "Drive", emoji: "📁", done: (p) => !!(p.driveLinks?.fotos || p.driveLinks?.video) },
+  { key: "material", short: "Fotos", emoji: "📸", done: (p) => !!(p.images?.length || p.driveLinks?.fotos || p.driveLinks?.video) },
   { key: "texto", short: "Texto", emoji: "✍️", done: (p) => !!(p.textoBruto && p.textoBruto.trim()) },
   { key: "ficha", short: "Ficha", emoji: "📋", done: (p) => !!(p.title && (p.price > 0 || p.rentPrice > 0) && p.images?.length) },
 ];
@@ -565,6 +565,23 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
         </div>
       </div>
 
+      {/* Passo 1 · Material do imóvel (fotos + Drive) — o que o Guilherme adiciona primeiro */}
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <StepHeader n={1} emoji="📸" title="Material do imóvel" who="fotos e vídeo" done={STEPS[0].done(p)} />
+        <MultiImageField images={p.images || []} onChange={(imgs) => update(i, { ...p, images: imgs })} coverImage={p.coverImage} showCover={!!p.cover} onSetCover={(src) => update(i, { ...p, coverImage: src })} zipName={`imovel-${p.code}`} />
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <DriveLinkField label="Link da pasta de fotos (Drive)" value={p.driveLinks?.fotos} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), fotos: v } })} />
+          <DriveLinkField label="Link do vídeo (Drive)" value={p.driveLinks?.video} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), video: v } })} />
+        </div>
+      </div>
+
+      {/* Passo 2 · Texto bruto */}
+      <div className="rounded-lg border border-black/10 bg-white p-3">
+        <StepHeader n={2} emoji="✍️" title="Texto bruto" who="descrição do imóvel" done={STEPS[1].done(p)} />
+        <p className="mb-2 text-xs text-ink-muted">Descrição do imóvel em texto livre, do jeito que vier. Depois esses dados viram a ficha completa e atraente que aparece no site.</p>
+        <TextArea label="" value={p.textoBruto} onChange={(v) => update(i, { ...p, textoBruto: v })} />
+      </div>
+
       {/* Proprietário */}
       <div className="rounded-lg border border-black/10 bg-white p-3">
         <span className="mb-2 block text-sm font-semibold text-ink-secondary">Proprietário</span>
@@ -605,23 +622,6 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
             </label>
           ))}
         </div>
-      </div>
-
-      {/* Passo 1 · Material no Drive */}
-      <div className="rounded-lg border border-black/10 bg-white p-3">
-        <StepHeader n={1} emoji="📁" title="Material no Drive" who="fotos e vídeo" done={STEPS[0].done(p)} />
-        <p className="mb-2 text-xs text-ink-muted">Cole os links do Drive das fotos e do vídeo deste imóvel.</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <DriveLinkField label="Link da pasta de fotos (Drive)" value={p.driveLinks?.fotos} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), fotos: v } })} />
-          <DriveLinkField label="Link do vídeo (Drive)" value={p.driveLinks?.video} onChange={(v) => update(i, { ...p, driveLinks: { ...(p.driveLinks || {}), video: v } })} />
-        </div>
-      </div>
-
-      {/* Passo 2 · Texto bruto */}
-      <div className="rounded-lg border border-black/10 bg-white p-3">
-        <StepHeader n={2} emoji="✍️" title="Texto bruto" who="descrição do imóvel" done={STEPS[1].done(p)} />
-        <p className="mb-2 text-xs text-ink-muted">Descrição do imóvel em texto livre, do jeito que vier. Depois esses dados viram a ficha completa e atraente que aparece no site.</p>
-        <TextArea label="" value={p.textoBruto} onChange={(v) => update(i, { ...p, textoBruto: v })} />
       </div>
 
       {/* Passo 3 · Ficha do site */}
@@ -692,7 +692,6 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
       <TextArea label="Instalações do imóvel (uma por linha)" value={(p.features || []).join("\n")} onChange={(v) => update(i, { ...p, features: linesToArray(v) })} />
       <TextArea label="Instalações do condomínio (uma por linha)" value={(p.condoFeatures || []).join("\n")} onChange={(v) => update(i, { ...p, condoFeatures: linesToArray(v) })} />
 
-      <MultiImageField images={p.images || []} onChange={(imgs) => update(i, { ...p, images: imgs })} coverImage={p.coverImage} showCover={!!p.cover} onSetCover={(src) => update(i, { ...p, coverImage: src })} zipName={`imovel-${p.code}`} />
       <button onClick={() => remove(i)} className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Excluir imóvel</button>
     </div>
   );
