@@ -90,6 +90,14 @@ function formatBRLShort(n) {
   if (v >= 1_000) return `R$ ${Math.round(v / 1000)} mil`;
   return v > 0 ? `R$ ${v}` : "";
 }
+// Rótulo do card: usa o título; se ainda for rascunho sem título, mostra o começo do
+// texto bruto para facilitar a identificação. Retorna { text, isPlaceholder }.
+function cardLabel(p, fallback = "Novo imóvel · clique para preencher") {
+  if (p?.title?.trim()) return { text: p.title.trim(), isPlaceholder: false };
+  const raw = (p?.textoBruto || "").replace(/\s+/g, " ").trim();
+  if (raw) return { text: raw.length > 90 ? raw.slice(0, 90).trimEnd() + "…" : raw, isPlaceholder: false };
+  return { text: fallback, isPlaceholder: true };
+}
 // Cabeçalho de etapa dentro do editor.
 function StepHeader({ n, emoji, title, who, done }) {
   return (
@@ -576,7 +584,9 @@ function KanbanCard({ p, i, active, onOpen, onDelete, onDragStart, onDragEnd, on
             <img src={p.images[0]} alt="" className="h-14 w-20 shrink-0 rounded-lg object-cover" />
           ) : (<span className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg bg-black/5 text-ink-muted">🏠</span>)}
           <div className="min-w-0 flex-1">
-            <div className={`truncate pr-7 text-[13px] font-semibold leading-snug ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique"}</div>
+            {(() => { const lbl = cardLabel(p, "Novo imóvel · clique"); return (
+            <div className={`truncate pr-7 text-[13px] font-semibold leading-snug ${lbl.isPlaceholder ? "italic text-ink-muted" : "text-ink"}`}>{lbl.text}</div>
+            ); })()}
             <div className="mt-0.5 truncate text-[11px] text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</div>
             {priceTxt && <div className="mt-0.5 truncate text-[13px] font-bold text-primary-dark">{priceTxt}</div>}
             <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -1093,7 +1103,9 @@ function ImoveisTab({ properties, setProperties, data }) {
                           <img src={p.images[0]} alt="" className="h-12 w-16 shrink-0 rounded-lg object-cover" />
                         ) : (<span className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg bg-black/5 text-ink-muted">🏠</span>)}
                         <span className="min-w-0 flex-1">
-                          <span className={`block truncate text-sm font-semibold ${p.title ? "text-ink" : "italic text-ink-muted"}`}>{p.title || "Novo imóvel · clique para preencher"}</span>
+                          {(() => { const lbl = cardLabel(p); return (
+                          <span className={`block truncate text-sm font-semibold ${lbl.isPlaceholder ? "italic text-ink-muted" : "text-ink"}`}>{lbl.text}</span>
+                          ); })()}
                           <span className="block truncate text-xs text-ink-muted">Cód {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
                           <span className="mt-1 flex flex-wrap items-center gap-1.5">
                             {(p.price > 0 || p.rentPrice > 0) && <span className="text-xs font-bold text-primary-dark">{p.price > 0 ? formatBRL(p.price) : `${formatBRL(p.rentPrice)}/mês`}</span>}
