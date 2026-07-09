@@ -1069,8 +1069,8 @@ function ImoveisTab({ properties, setProperties, data }) {
 
       {/* Entrada rápida de imóvel (infos básicas + upload de fotos e/ou Drive) */}
       {quickAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setQuickAdd(null)}>
-          <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4" onClick={() => setQuickAdd(null)}>
+          <div className="my-auto flex max-h-[88dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 pt-5">
               <h3 className="text-base font-semibold text-ink">Novo imóvel · entrada rápida</h3>
               <button onClick={() => setQuickAdd(null)} className="rounded-lg px-2 py-1 text-sm text-ink-secondary hover:bg-black/5">✕</button>
