@@ -5,7 +5,6 @@ import StatusBadge from "../StatusBadge";
 import { formatBRL } from "@/lib/format";
 
 const TABS = [
-  { id: "contatos", label: "Contatos", icon: "M22 5H2v14h20zM2 6l10 7 10-7" },
   { id: "imoveis", label: "Imóveis", icon: "M3 11l9-8 9 8M5 9.5V21h14V9.5" },
   { id: "equipe", label: "Equipe & Funil", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
   { id: "capa", label: "Capa", icon: "M3 4h18v16H3zM3 16l5-5 4 4 3-3 6 6M8 9a1 1 0 1 0 0 .01" },
@@ -14,6 +13,7 @@ const TABS = [
   { id: "secoes", label: "Seções da Home", icon: "M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5" },
   { id: "form", label: "Formulário", icon: "M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3M9 4a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1M8 12h8M8 16h5" },
   { id: "rodape", label: "Rodapé", icon: "M3 4h18v16H3zM3 15h18" },
+  { id: "contatos", label: "Contatos", icon: "M22 5H2v14h20zM2 6l10 7 10-7" },
 ];
 
 const OPERATIONS = ["Venda", "Aluguel", "Financiamento"];
@@ -152,7 +152,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
   const [data, setData] = useState(initial);
   const [properties, setProperties] = useState(initialProperties);
   const [leads, setLeads] = useState(initialLeads);
-  const [tab, setTab] = useState("contatos");
+  const [tab, setTab] = useState("imoveis");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
