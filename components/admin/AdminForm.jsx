@@ -488,6 +488,8 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
   const etapaOptions = funnel.map((f) => ({ value: f.id, label: f.label }));
   const lastId = funnel[funnel.length - 1]?.id;
   const prevId = funnel[funnel.length - 2]?.id || funnel[0]?.id; // etapa antes da última
+  const productionOptions = etapaOptions.filter((o) => o.value !== lastId); // etapas manuais (sem "No site")
+  const lastLabel = etapaOptions.find((o) => o.value === lastId)?.label || "No site";
   return (
     <div className="space-y-4">
       {/* Progresso do imóvel (3 marcos: Drive → Texto → Ficha) */}
@@ -516,7 +518,22 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
             <span className="mb-1 block text-sm font-medium text-ink-secondary">Responsável agora</span>
             <RespPicker team={team} value={p.responsavel} onChange={(v) => update(i, { ...p, responsavel: v })} />
           </label>
-          <LabeledSelect label="Etapa (funil)" value={p.etapa || etapaOptions[0]?.value} options={etapaOptions} onChange={(v) => update(i, { ...p, etapa: v, publicado: v === lastId })} />
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-ink-secondary">Etapa (funil)</span>
+            {p.publicado ? (
+              <div className="flex h-10 items-center gap-1.5 rounded-lg border border-[#16a34a]/30 bg-[#eaf7ee] px-3 text-sm font-semibold text-[#16a34a]" title="Definido pela publicação — use o botão Rascunho para voltar à produção">
+                ✅ {lastLabel}
+              </div>
+            ) : (
+              <select
+                value={p.etapa && p.etapa !== lastId ? p.etapa : productionOptions[0]?.value}
+                onChange={(e) => update(i, { ...p, etapa: e.target.value, publicado: false })}
+                className="h-10 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary"
+              >
+                {productionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )}
+          </label>
           <LabeledSelect label="Situação (badge no site)" value={p.status || "disponivel"} options={STATUS_OPTIONS} onChange={(v) => update(i, { ...p, status: v })} />
         </div>
         <div className="mt-3">
@@ -721,12 +738,13 @@ function ImoveisTab({ properties, setProperties, data }) {
     ...funnel.map((f, idx) => ({ kind: "stage", id: f.id, label: f.label, hint: f.hint, owner: f.owner, num: idx + 1 })),
     ...SPECIAL_COLS.map((s) => ({ kind: "special", ...s })),
   ];
-  // A coluna é decidida pela ETAPA (não pelo publicado). Vendido/alugado vão p/ colunas próprias.
-  // Regra do fluxo: publicado ⇔ está na última etapa ("No site"). Coerência garantida em todas as ações.
+  // Regra do fluxo: publicado ⇔ última etapa ("No site"). Publicado sempre cai nessa coluna;
+  // rascunho fica na etapa de produção. Vendido/alugado vão p/ colunas próprias.
   function columnOf(p) {
     if (p.status === "vendido") return "__vendidos";
     if (p.status === "alugado") return "__alugados";
-    return etapaValues.includes(p.etapa) ? p.etapa : firstId;
+    if (p.publicado) return lastId;
+    return etapaValues.includes(p.etapa) && p.etapa !== lastId ? p.etapa : firstId;
   }
   // Mover um imóvel para uma coluna (arrastar/setas). Especial = muda a situação;
   // etapa do funil = limpa vendido/alugado e aplica a regra de publicação.
