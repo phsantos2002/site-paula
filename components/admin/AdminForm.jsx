@@ -1109,6 +1109,13 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-ink">{p.title || "(sem título)"}</div>
               <div className="truncate text-xs text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}{!p.publicado ? " · rascunho" : ""}</div>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {p.price > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.price)}<span className="font-medium text-ink-muted"> · venda</span></span>}
+                {p.rentPrice > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.rentPrice)}/mês<span className="font-medium text-ink-muted"> · aluguel</span></span>}
+                {p.status && p.status !== "disponivel"
+                  ? <StatusBadge status={p.status} />
+                  : <span className="rounded bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2fa03c]">Disponível</span>}
+              </div>
             </div>
             <button onClick={() => onEdit(i)} title="Editar" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
             {onRemove && <button onClick={() => onRemove(i)} title="Remover daqui" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-black/5 hover:text-red-600"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>}
