@@ -414,6 +414,12 @@ function RespPicker({ value, onChange, team, compact }) {
   );
 }
 
+/* Selo de situação (todos os status, tamanho xs). Disponível vira pílula verde. */
+function SituacaoBadge({ status }) {
+  if (status && status !== "disponivel") return <StatusBadge status={status} size="xs" />;
+  return <span className="rounded bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2fa03c]">Disponível</span>;
+}
+
 /* Card do Kanban · faixa colorida do responsável, título, badges, e progresso (Drive/Texto/Ficha). */
 function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragEnd, onResp, onMove, canPrev, canNext }) {
   const member = (team || []).find((t) => t.id === p.responsavel);
@@ -447,7 +453,7 @@ function KanbanCard({ p, i, active, team, onOpen, onDelete, onDragStart, onDragE
             <div className="mt-0.5 truncate text-[11px] text-ink-muted">Cód {p.code}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</div>
             {priceTxt && <div className="mt-0.5 truncate text-[11px] font-semibold text-primary-dark">{priceTxt}</div>}
             <div className="mt-1 flex flex-wrap items-center gap-1">
-              {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
+              <SituacaoBadge status={p.status} />
               {p.publicado && <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>}
               {p.cover && <span title="Capa da home" className="text-[11px]">🏠</span>}
               {p.featured && <span title="Destaque" className="text-[11px]">⭐</span>}
@@ -949,7 +955,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                           <span className="block truncate text-xs text-ink-muted">Cód: {p.code} · {p.type}{p.neighborhood ? ` · ${p.neighborhood}` : ""}</span>
                           {(p.price > 0 || p.rentPrice > 0) && <span className="block truncate text-xs font-semibold text-primary-dark">{p.price > 0 ? formatBRL(p.price) : `${formatBRL(p.rentPrice)}/mês`}</span>}
                           <span className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
-                            {p.status && p.status !== "disponivel" && <StatusBadge status={p.status} />}
+                            <SituacaoBadge status={p.status} />
                             <ResponsavelChip member={teamBy[p.responsavel]} size="xs" />
                             <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "·"}</span>
                             <StepDots p={p} />
@@ -958,7 +964,7 @@ function ImoveisTab({ properties, setProperties, data }) {
                       </button>
 
                       {/* colunas alinhadas (desktop) */}
-                      <div className="hidden w-24 shrink-0 md:block">{p.status && p.status !== "disponivel" ? <StatusBadge status={p.status} /> : <span className="text-xs text-ink-muted">·</span>}</div>
+                      <div className="hidden w-24 shrink-0 md:block"><SituacaoBadge status={p.status} /></div>
                       <div className="hidden w-32 shrink-0 md:block">{teamBy[p.responsavel] ? <ResponsavelChip member={teamBy[p.responsavel]} size="xs" /> : <span className="text-xs text-ink-muted">·</span>}</div>
                       <div className="hidden w-28 shrink-0 md:block"><span className="rounded bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-muted">{etapaLabel[p.etapa] || p.etapa || "·"}</span></div>
                       <div className="hidden w-14 shrink-0 md:block" title="Progresso: Drive · Texto · Ficha"><StepDots p={p} /></div>
@@ -1112,9 +1118,7 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {p.price > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.price)}<span className="font-medium text-ink-muted"> · venda</span></span>}
                 {p.rentPrice > 0 && <span className="text-xs font-bold text-primary-dark">{formatBRL(p.rentPrice)}/mês<span className="font-medium text-ink-muted"> · aluguel</span></span>}
-                {p.status && p.status !== "disponivel"
-                  ? <StatusBadge status={p.status} size="xs" />
-                  : <span className="rounded bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2fa03c]">Disponível</span>}
+                <SituacaoBadge status={p.status} />
               </div>
             </div>
             <button onClick={() => onEdit(i)} title="Editar" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
