@@ -464,12 +464,17 @@ function KanbanCard({ p, i, active, onOpen, onDelete, onDragStart, onDragEnd, on
               {p.publicado
                 ? <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>
                 : <span className="inline-flex items-center gap-1 rounded-full bg-[#fff3e0] px-1.5 py-0.5 text-[10px] font-semibold text-[#b7791f]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffa200]" />rascunho</span>}
-              {p.cover && <span title="Capa da home" className="text-[11px]">🏠</span>}
-              {p.featured && <span title="Destaque" className="text-[11px]">⭐</span>}
             </div>
           </div>
         </div>
       </div>
+
+      {(p.cover || p.featured) && (
+        <div className="flex items-center gap-1.5 border-t border-black/5 px-2.5 py-1.5">
+          {p.cover && <span className="inline-flex items-center gap-1 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-secondary">🏠 Capa</span>}
+          {p.featured && <span className="inline-flex items-center gap-1 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-secondary">⭐ Destaque</span>}
+        </div>
+      )}
 
       <div className="flex items-center justify-between border-t border-black/5 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
         <button onClick={() => onMove(-1)} disabled={!canPrev} title="Coluna anterior" className="flex h-6 w-7 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25">◄</button>
@@ -1005,8 +1010,6 @@ function ImoveisTab({ properties, setProperties, data }) {
                             {p.publicado
                               ? <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f8ea] px-1.5 py-0.5 text-[10px] font-semibold text-[#2fa03c]"><span className="h-1.5 w-1.5 rounded-full bg-[#4ecb5b]" />no ar</span>
                               : <span className="inline-flex items-center gap-1 rounded-full bg-[#fff3e0] px-1.5 py-0.5 text-[10px] font-semibold text-[#b7791f]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffa200]" />rascunho</span>}
-                            {p.cover && <span title="Capa da home" className="text-[11px]">🏠</span>}
-                            {p.featured && <span title="Destaque" className="text-[11px]">⭐</span>}
                           </span>
                         </span>
                       </button>
@@ -1017,6 +1020,12 @@ function ImoveisTab({ properties, setProperties, data }) {
                       <button onClick={() => togglePublish(i, p)} className={`hidden shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors md:inline-block ${p.publicado ? "bg-black/5 text-ink-secondary hover:bg-black/10" : "bg-primary text-ink-cta hover:bg-primary-hover"}`}>{p.publicado ? "Despublicar" : "Publicar"}</button>
                       <button onClick={() => setOpenIdx(i)} title="Editar" aria-label="Editar" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-black/5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                     </div>
+                    {(p.cover || p.featured) && (
+                      <div className="flex items-center gap-1.5 border-t border-black/5 px-3 py-1.5 md:px-4">
+                        {p.cover && <span className="inline-flex items-center gap-1 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-secondary">🏠 Capa</span>}
+                        {p.featured && <span className="inline-flex items-center gap-1 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium text-ink-secondary">⭐ Destaque</span>}
+                      </div>
+                    )}
                   </div>
                 )}
               </Fragment>
