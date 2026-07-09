@@ -148,11 +148,20 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
   const [properties, setProperties] = useState(initialProperties);
   const [leads, setLeads] = useState(initialLeads);
   const [tab, setTab] = useState("imoveis");
-  const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState("saved"); // saved | dirty | saving | error
   const [msg, setMsg] = useState(null);
   // Navegação da aba Templates (template aberto + sub-aba). Vive aqui para não se
   // perder quando o usuário alterna para outra aba do painel e volta.
   const [tplNav, setTplNav] = useState({ openId: null, sub: "visao" });
+
+  // Refs sempre com o valor mais recente — o auto-save lê daqui (sem stale closure).
+  const dataRef = useRef(data); dataRef.current = data;
+  const propsRef = useRef(properties); propsRef.current = properties;
+  const leadsRef = useRef(leads); leadsRef.current = leads;
+  const savingRef = useRef(false);
+  const pendingRef = useRef(false);
+  const timerRef = useRef(null);
+  const mountedRef = useRef(false);
 
   // patch(section, key, value) -> data[section][key] = value (cobre objetos e arrays-valor)
   function patch(section, key, value) {
@@ -163,41 +172,72 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
     setData((d) => ({ ...d, [section]: value }));
   }
 
-  async function save() {
-    setSaving(true);
-    setMsg(null);
-    const sent = data; // snapshot enviado; protege edições feitas durante o save
+  // Persiste tudo (conteúdo + imóveis + contatos). Sem sincronizar a resposta de volta
+  // para o estado — o cliente é a fonte da verdade e isso evita loop com o auto-save.
+  async function flush(manual = false) {
+    if (savingRef.current) { pendingRef.current = true; return; } // já salvando: reprograma depois
+    savingRef.current = true;
+    setSaveState("saving");
+    if (manual) setMsg(null);
+    const sentData = dataRef.current, sentProps = propsRef.current, sentLeads = leadsRef.current;
+    let ok = false, errText = "Erro ao salvar.";
     try {
       const [r1, r2, r3] = await Promise.all([
-        fetch("/api/admin/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
-        fetch("/api/admin/properties", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ properties }) }),
-        fetch("/api/admin/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ leads }) }),
+        fetch("/api/admin/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(sentData) }),
+        fetch("/api/admin/properties", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ properties: sentProps }) }),
+        fetch("/api/admin/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ leads: sentLeads }) }),
       ]);
       const j1 = await r1.json().catch(() => ({}));
       const j2 = await r2.json().catch(() => ({}));
       const j3 = await r3.json().catch(() => ({}));
-      if (j1.ok && j2.ok && j3.ok) {
-        // Sincroniza com o que foi persistido (defaults mesclados), mas só se o usuário
-        // não editou nada enquanto o save estava em andamento (senão perderia digitação).
-        if (j1.content) setData((cur) => (cur === sent ? j1.content : cur));
-        if (j2.properties) setProperties(j2.properties);
-        if (j3.leads) setLeads(j3.leads);
-        setMsg({ type: "ok", text: "Tudo salvo! Atualize o site para ver." });
-      } else {
-        setMsg({ type: "err", text: j1.error || j2.error || j3.error || "Erro ao salvar." });
-      }
-    } catch {
-      setMsg({ type: "err", text: "Erro de conexão." });
+      ok = !!(j1.ok && j2.ok && j3.ok);
+      errText = j1.error || j2.error || j3.error || errText;
+    } catch { errText = "Sem conexão."; }
+    savingRef.current = false;
+    // Mudou algo enquanto salvava? Continua sujo -> salva de novo em breve.
+    const changedDuring = dataRef.current !== sentData || propsRef.current !== sentProps || leadsRef.current !== sentLeads;
+    if (!ok) {
+      setSaveState("error");
+      setMsg({ type: "err", text: errText });
+    } else if (changedDuring || pendingRef.current) {
+      pendingRef.current = false;
+      scheduleSave(500);
+    } else {
+      setSaveState("saved");
+      if (manual) setMsg({ type: "ok", text: "Tudo salvo!" });
     }
-    setSaving(false);
+  }
+
+  function scheduleSave(delay = 1200) {
+    clearTimeout(timerRef.current);
+    setSaveState("dirty");
+    timerRef.current = setTimeout(() => flush(false), delay);
   }
 
   async function logout() {
+    clearTimeout(timerRef.current);
+    await flush(false); // não sai sem salvar
     await fetch("/api/admin/logout", { method: "POST" });
     window.location.reload();
   }
 
-  // some o aviso de sucesso sozinho
+  // Auto-save (debounced) a cada mudança de conteúdo / imóveis / contatos.
+  useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return; }
+    scheduleSave();
+    return () => clearTimeout(timerRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, properties, leads]);
+
+  // Salva ao minimizar/fechar a aba (celular) para não perder nada pendente.
+  useEffect(() => {
+    const onHide = () => { if (document.visibilityState === "hidden") { clearTimeout(timerRef.current); flush(false); } };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // some o aviso sozinho
   useEffect(() => {
     if (msg?.type === "ok") {
       const t = setTimeout(() => setMsg(null), 3000);
@@ -223,9 +263,29 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17 17 7M9 7h8v8" /></svg>
             </a>
             <button onClick={logout} className="rounded-lg px-3 py-2 text-sm text-ink-secondary hover:bg-black/5">Sair</button>
-            <button onClick={save} disabled={saving} className="flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-ink-secondary disabled:opacity-60">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8" /></svg>
-              {saving ? "Salvando..." : "Salvar"}
+            <button
+              onClick={() => flush(true)}
+              disabled={saveState === "saving"}
+              title="Salvamento automático — clique para salvar agora"
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-colors disabled:cursor-default ${
+                saveState === "error"
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : saveState === "dirty"
+                  ? "bg-primary text-ink-cta hover:bg-primary-hover"
+                  : saveState === "saving"
+                  ? "bg-ink text-white opacity-80"
+                  : "bg-[#eaf7ee] text-[#2fa03c]"
+              }`}
+            >
+              {saveState === "saving" ? (
+                <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.22-8.56" /></svg>Salvando…</>
+              ) : saveState === "error" ? (
+                <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>Não salvou · salvar</>
+              ) : saveState === "dirty" ? (
+                <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8" /></svg>Salvar agora</>
+              ) : (
+                <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Salvo</>
+              )}
             </button>
           </div>
         </div>
