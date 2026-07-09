@@ -7,12 +7,6 @@ const TABS = [
   { id: "imoveis", label: "Imóveis", icon: "M3 11l9-8 9 8M5 9.5V21h14V9.5" },
   { id: "equipe", label: "Equipe & Funil", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
   { id: "template", label: "Templates", icon: "M3 3h18v18H3zM3 9h18M9 21V9" },
-  { id: "capa", label: "Capa", icon: "M3 4h18v16H3zM3 16l5-5 4 4 3-3 6 6M8 9a1 1 0 1 0 0 .01" },
-  { id: "marca", label: "Marca & Cores", icon: "M20.6 12.6 12 4H4v8l8.6 8.6a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8zM7.5 7.5h.01" },
-  { id: "menu", label: "Menu & Contato", icon: "M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z" },
-  { id: "secoes", label: "Seções da Home", icon: "M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5" },
-  { id: "form", label: "Formulário", icon: "M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3M9 4a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1M8 12h8M8 16h5" },
-  { id: "rodape", label: "Rodapé", icon: "M3 4h18v16H3zM3 15h18" },
   { id: "contatos", label: "Contatos", icon: "M22 5H2v14h20zM2 6l10 7 10-7" },
 ];
 
@@ -258,13 +252,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
           {tab === "contatos" && <ContatosTab leads={leads} setLeads={setLeads} />}
           {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setProperties} data={data} />}
           {tab === "equipe" && <EquipeTab data={data} setSection={setSection} />}
-          {tab === "template" && <TemplatesTab data={data} setSection={setSection} />}
-          {tab === "capa" && <CapaTab data={data} patch={patch} />}
-          {tab === "marca" && <MarcaTab data={data} patch={patch} />}
-          {tab === "menu" && <MenuTab data={data} patch={patch} setSection={setSection} />}
-          {tab === "secoes" && <SecoesTab data={data} patch={patch} setSection={setSection} />}
-          {tab === "form" && <FormTab data={data} patch={patch} />}
-          {tab === "rodape" && <RodapeTab data={data} patch={patch} />}
+          {tab === "template" && <TemplatesTab data={data} patch={patch} setSection={setSection} />}
         </div>
       </div>
 
@@ -1238,37 +1226,54 @@ function TemplatePreview({ accent }) {
   );
 }
 
-function TemplatesTab({ data, setSection }) {
+/* Prévia real do site (iframe reduzido). */
+function SitePreview({ className = "" }) {
+  return (
+    <div className={`relative overflow-hidden bg-black/[0.03] ${className}`}>
+      <iframe src="/" title="Prévia do site" scrolling="no" tabIndex={-1} className="pointer-events-none absolute left-0 top-0 h-[250%] w-[250%] origin-top-left scale-[0.4] border-0" />
+    </div>
+  );
+}
+
+function TemplatesTab({ data, patch, setSection }) {
+  const [openId, setOpenId] = useState(null);
   const current = data.template || "classico";
+  const openTpl = TEMPLATES.find((t) => t.id === openId);
+  if (openTpl) {
+    return <TemplateDetail tpl={openTpl} active={current === openTpl.id} data={data} patch={patch} setSection={setSection} onBack={() => setOpenId(null)} onActivate={() => setSection("template", openTpl.id)} />;
+  }
   return (
     <Card title="Templates do site">
-      <p className="-mt-2 text-sm text-ink-muted">Escolha o visual do seu site, como uma loja de temas. Ao trocar de template, <strong>todo o seu conteúdo é mantido</strong> (imóveis, marca, cores, textos, contatos) — muda só o layout.</p>
+      <p className="-mt-2 text-sm text-ink-muted">Escolha o visual do seu site, como uma loja de temas. Ao trocar de template, <strong>todo o seu conteúdo é mantido</strong> (imóveis, marca, cores, textos, contatos) — muda só o layout. A personalização de cada template fica <strong>dentro dele</strong>.</p>
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {TEMPLATES.map((t) => {
           const accent = t.id === "classico" ? (data.colors?.primary || "#F6BC41") : (t.accent || "#111827");
           const active = current === t.id;
           return (
             <div key={t.id} className={`flex flex-col overflow-hidden rounded-xl border bg-white transition ${active ? "border-primary ring-2 ring-primary/30" : "border-black/10"}`}>
-              <div className="relative p-3">
-                <div className={t.available ? "" : "opacity-50 grayscale"}><TemplatePreview accent={accent} /></div>
+              <button type="button" onClick={() => t.available && setOpenId(t.id)} className="relative block text-left">
+                <div className="p-3">
+                  {t.available
+                    ? <SitePreview className="aspect-[16/10] w-full rounded-lg border border-black/10" />
+                    : <div className="opacity-50 grayscale"><TemplatePreview accent={accent} /></div>}
+                </div>
                 {active && <span className="absolute right-4 top-4 rounded-full bg-[#16a34a] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">✓ Ativo</span>}
                 {!active && !t.available && <span className="absolute right-4 top-4 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Em breve</span>}
-              </div>
+              </button>
               <div className="flex flex-1 flex-col px-4 pb-4">
                 <div className="flex items-baseline gap-2">
                   <h3 className="font-poppins text-base font-semibold text-ink">{t.name}</h3>
                   <span className="text-xs text-ink-muted">· {t.tagline}</span>
                 </div>
                 <p className="mt-1 flex-1 text-xs leading-relaxed text-ink-muted">{t.desc}</p>
-                <div className="mt-3">
+                <div className="mt-3 flex gap-2">
                   {t.available ? (
-                    active ? (
-                      <button disabled className="w-full rounded-lg bg-black/5 py-2 text-sm font-semibold text-ink-secondary">Template ativo</button>
-                    ) : (
-                      <button onClick={() => setSection("template", t.id)} className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Usar este template</button>
-                    )
+                    <>
+                      <button onClick={() => setOpenId(t.id)} className="flex-1 rounded-lg bg-ink py-2 text-sm font-semibold text-white hover:bg-ink-secondary">{active ? "Personalizar" : "Abrir"}</button>
+                      {!active && <button onClick={() => setSection("template", t.id)} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Ativar</button>}
+                    </>
                   ) : (
-                    <button disabled className="w-full rounded-lg border border-dashed border-black/15 py-2 text-sm font-medium text-ink-muted">Em breve</button>
+                    <button disabled className="flex-1 rounded-lg border border-dashed border-black/15 py-2 text-sm font-medium text-ink-muted">Em breve</button>
                   )}
                 </div>
               </div>
@@ -1276,8 +1281,65 @@ function TemplatesTab({ data, setSection }) {
           );
         })}
       </div>
-      <p className="mt-1 rounded-lg bg-black/[0.03] p-3 text-xs text-ink-muted">O template define a <strong>estrutura visual</strong> das páginas. As cores, a marca e os textos continuam sendo ajustados nas abas <strong>Marca &amp; Cores</strong> e <strong>Seções da Home</strong>, e valem para qualquer template.</p>
     </Card>
+  );
+}
+
+/* Detalhe do template: prévia + saber mais + personalização embutida (sub-abas). */
+function TemplateDetail({ tpl, active, data, patch, setSection, onBack, onActivate }) {
+  const [sub, setSub] = useState("visao");
+  const SUBS = [
+    { id: "visao", label: "Visão geral" },
+    { id: "capa", label: "Capa" },
+    { id: "marca", label: "Marca & Cores" },
+    { id: "menu", label: "Menu & Contato" },
+    { id: "secoes", label: "Seções da Home" },
+    { id: "form", label: "Formulário" },
+    { id: "rodape", label: "Rodapé" },
+  ];
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <button onClick={onBack} className="inline-flex items-center gap-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-medium text-ink-secondary hover:bg-black/5">← Templates</button>
+        <h2 className="font-poppins text-lg font-semibold text-ink">Template {tpl.name}</h2>
+        {active
+          ? <span className="rounded-full bg-[#16a34a] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">✓ Ativo</span>
+          : <button onClick={onActivate} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Ativar este template</button>}
+        <a href="/" target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-ink-secondary hover:bg-black/5">Ver site <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17 17 7M9 7h8v8" /></svg></a>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 border-b border-black/10 pb-2">
+        {SUBS.map((s) => (
+          <button key={s.id} onClick={() => setSub(s.id)} className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${sub === s.id ? "bg-ink text-white" : "text-ink-secondary hover:bg-black/5"}`}>{s.label}</button>
+        ))}
+      </div>
+
+      {sub === "visao" && (
+        <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+          <div className="overflow-hidden rounded-xl border border-black/10">
+            <SitePreview className="aspect-[16/10] w-full" />
+          </div>
+          <div className="rounded-xl border border-black/10 bg-white p-4">
+            <h3 className="font-poppins text-base font-semibold text-ink">Sobre o {tpl.name}</h3>
+            <p className="mt-1 text-sm leading-relaxed text-ink-secondary">{tpl.desc}</p>
+            <ul className="mt-3 space-y-1.5 text-sm text-ink-secondary">
+              <li>• Carrossel de capa no topo</li>
+              <li>• Seção “Sobre” com foto e estatísticas</li>
+              <li>• Destaques de imóveis + listagem com filtros</li>
+              <li>• Formulário de contato e rodapé completos</li>
+            </ul>
+            <p className="mt-3 text-xs text-ink-muted">Use as abas acima para personalizar cada parte deste template.</p>
+            <a href="/" target="_blank" rel="noreferrer" className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-sm font-semibold text-ink-cta hover:bg-primary-hover">Ver site em tela cheia</a>
+          </div>
+        </div>
+      )}
+      {sub === "capa" && <CapaTab data={data} patch={patch} />}
+      {sub === "marca" && <MarcaTab data={data} patch={patch} />}
+      {sub === "menu" && <MenuTab data={data} patch={patch} setSection={setSection} />}
+      {sub === "secoes" && <SecoesTab data={data} patch={patch} setSection={setSection} />}
+      {sub === "form" && <FormTab data={data} patch={patch} />}
+      {sub === "rodape" && <RodapeTab data={data} patch={patch} />}
+    </div>
   );
 }
 
