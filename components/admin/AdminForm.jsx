@@ -518,10 +518,26 @@ function PropertyEditor({ p, i, update, remove, team = DEFAULT_TEAM, funnel = DE
           <LabeledSelect label="Etapa (funil)" value={p.etapa || etapaOptions[0]?.value} options={etapaOptions} onChange={(v) => update(i, { ...p, etapa: v, publicado: v === lastId ? p.publicado : false })} />
           <LabeledSelect label="Situação (badge no site)" value={p.status || "disponivel"} options={STATUS_OPTIONS} onChange={(v) => update(i, { ...p, status: v })} />
         </div>
-        <label className="mt-3 flex items-start gap-2 rounded-md border border-black/10 bg-black/[0.02] p-2.5 text-sm text-ink-secondary">
-          <input type="checkbox" checked={!!p.publicado} onChange={(e) => update(i, { ...p, publicado: e.target.checked, etapa: e.target.checked ? lastId : p.etapa })} className="mt-0.5 h-4 w-4 accent-primary" />
-          <span><strong>{p.publicado ? "✅ Publicado no site" : "📝 Rascunho (não aparece no site)"}</strong><span className="block text-xs text-ink-muted">Desmarcado, o imóvel existe só aqui no painel. Marque para exibir na home e na listagem.</span></span>
-        </label>
+        <div className="mt-3">
+          <span className="mb-1.5 block text-sm font-medium text-ink-secondary">Publicação no site</span>
+          <div className="inline-flex overflow-hidden rounded-lg border border-black/10">
+            <button
+              type="button"
+              onClick={() => update(i, { ...p, publicado: false })}
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition-colors ${!p.publicado ? "bg-[#ffa200] text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}
+            >📝 Rascunho</button>
+            <button
+              type="button"
+              onClick={() => update(i, { ...p, publicado: true, etapa: lastId })}
+              className={`flex items-center gap-1.5 border-l border-black/10 px-4 py-2 text-sm font-semibold transition-colors ${p.publicado ? "bg-[#16a34a] text-white" : "bg-white text-ink-secondary hover:bg-black/5"}`}
+            >✅ Publicado no site</button>
+          </div>
+          <p className="mt-1.5 text-xs text-ink-muted">
+            {p.publicado
+              ? "Está no ar: aparece na home e na listagem do site."
+              : "É rascunho: existe só aqui no painel. Clique em “Publicado no site” para colocar no ar."}
+          </p>
+        </div>
       </div>
 
       {/* Proprietário */}
