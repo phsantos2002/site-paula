@@ -878,7 +878,13 @@ function ImoveisTab({ properties, setProperties, data }) {
     if (statusFilter && (p.status || "disponivel") !== statusFilter) return false;
     if (etapaFilter && (p.etapa || "") !== etapaFilter) return false;
     if (typeFilter && p.type !== typeFilter) return false;
-    if (divulgacaoFilter && !p.distribuicao?.[divulgacaoFilter]) return false;
+    if (divulgacaoFilter) {
+      // "!chave" = quero ver os que NÃO têm; "chave" = os que já têm.
+      const neg = divulgacaoFilter.startsWith("!");
+      const key = neg ? divulgacaoFilter.slice(1) : divulgacaoFilter;
+      const has = !!p.distribuicao?.[key];
+      if (neg ? has : !has) return false;
+    }
     if (filter === "rascunhos" && p.publicado) return false;
     if (filter === "publicados" && !p.publicado) return false;
     if (filter === "distrib_pendente" && !(p.publicado && DISTRIBUICAO_ITENS.some((it) => !p.distribuicao?.[it.key]))) return false;
@@ -958,7 +964,11 @@ function ImoveisTab({ properties, setProperties, data }) {
   const etapaFilterOptions = [{ value: "", label: "Todas" }, ...funnel.map((f) => ({ value: f.id, label: f.label }))];
   const typeFilterOptions = [{ value: "", label: "Todos" }, ...TYPES.map((t) => ({ value: t, label: t }))];
   const DIVULG_SHORT = { carrossel: "Carrossel", reels: "Reels", anuncio: "Anúncio" };
-  const divulgacaoOptions = [{ value: "", label: "Todas" }, ...DISTRIBUICAO_ITENS.map((it) => ({ value: it.key, label: `✓ ${DIVULG_SHORT[it.key] || it.label}` }))];
+  const divulgacaoOptions = [
+    { value: "", label: "Todas" },
+    ...DISTRIBUICAO_ITENS.map((it) => ({ value: it.key, label: `✓ ${DIVULG_SHORT[it.key] || it.label}` })),
+    ...DISTRIBUICAO_ITENS.map((it) => ({ value: `!${it.key}`, label: `✕ sem ${DIVULG_SHORT[it.key] || it.label}` })),
+  ];
   const respFilterOptions = [{ value: "", label: "Todos" }, ...team.map((t) => ({ value: t.id, label: `${t.emoji} ${t.name} (${respCounts[t.id]})` }))];
   // Filtros ativos (para o contador e as pílulas removíveis)
   const activePills = [];
@@ -966,7 +976,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   if (statusFilter) activePills.push({ key: "situacao", label: STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label, clear: () => setStatusFilter("") });
   if (etapaFilter) activePills.push({ key: "etapa", label: etapaLabel[etapaFilter] || etapaFilter, clear: () => setEtapaFilter("") });
   if (typeFilter) activePills.push({ key: "tipo", label: typeFilter, clear: () => setTypeFilter("") });
-  if (divulgacaoFilter) activePills.push({ key: "divulg", label: `Divulg: ${DIVULG_SHORT[divulgacaoFilter] || divulgacaoFilter}`, clear: () => setDivulgacaoFilter("") });
+  if (divulgacaoFilter) { const neg = divulgacaoFilter.startsWith("!"); const dk = neg ? divulgacaoFilter.slice(1) : divulgacaoFilter; activePills.push({ key: "divulg", label: `Divulg: ${neg ? "sem " : ""}${DIVULG_SHORT[dk] || dk}`, clear: () => setDivulgacaoFilter("") }); }
   if (respFilter) activePills.push({ key: "resp", label: teamBy[respFilter]?.name || respFilter, clear: () => setRespFilter("") });
   const activeCount = activePills.length;
 
@@ -1010,7 +1020,7 @@ function ImoveisTab({ properties, setProperties, data }) {
             <FilterGroup label="Situação" value={statusFilter} onChange={setStatusFilter} options={situacaoOptions} />
             <FilterGroup label="Etapa do funil" value={etapaFilter} onChange={setEtapaFilter} options={etapaFilterOptions} />
             <FilterGroup label="Tipo de imóvel" value={typeFilter} onChange={setTypeFilter} options={typeFilterOptions} />
-            <FilterGroup label="Divulgação (feito)" value={divulgacaoFilter} onChange={setDivulgacaoFilter} options={divulgacaoOptions} />
+            <FilterGroup label="Divulgação" value={divulgacaoFilter} onChange={setDivulgacaoFilter} options={divulgacaoOptions} />
             <FilterGroup label="Responsável" value={respFilter} onChange={setRespFilter} options={respFilterOptions} />
           </div>
         )}
