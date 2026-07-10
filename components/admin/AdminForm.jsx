@@ -90,6 +90,14 @@ function formatBRLShort(n) {
   if (v >= 1_000) return `R$ ${Math.round(v / 1000)} mil`;
   return v > 0 ? `R$ ${v}` : "";
 }
+// Busca do painel: casa o termo com título, código, bairro, cidade, tipo E o texto bruto
+// (rascunhos sem título são identificados pelo texto bruto que aparece no card). `q` já vem
+// em minúsculas e sem espaços nas pontas.
+function propMatches(p, q) {
+  if (!q) return true;
+  return `${p.title} ${p.code} ${p.neighborhood} ${p.city} ${p.type} ${p.textoBruto}`.toLowerCase().includes(q);
+}
+
 // Rótulo do card: usa o título; se ainda for rascunho sem título, mostra o começo do
 // texto bruto para facilitar a identificação. Retorna { text, isPlaceholder }.
 function cardLabel(p, fallback = "Novo imóvel · clique para preencher") {
@@ -928,7 +936,7 @@ function ImoveisTab({ properties, setProperties, data }) {
   // Reordenar só faz sentido na Lista completa (define a ordem da capa/destaques na home).
   const showReorder = view === "lista" && filter === "all" && !respFilter && !statusFilter && !etapaFilter && !typeFilter && !divulgacaoFilter && !query.trim();
   const q = query.trim().toLowerCase();
-  const matchesQuery = (p) => !q || `${p.title} ${p.code} ${p.neighborhood} ${p.city}`.toLowerCase().includes(q);
+  const matchesQuery = (p) => propMatches(p, q);
   const rows = properties.map((p, i) => ({ p, i })).filter(({ p }) => isVisible(p) && matchesQuery(p));
   const isClosed = (p) => p.status === "vendido" || p.status === "alugado";
   const vendidos = rows.filter(({ p }) => p.status === "vendido");
@@ -1062,7 +1070,7 @@ function ImoveisTab({ properties, setProperties, data }) {
         </>
       ) : view === "capa" ? (
         /* ===== CAPA & DESTAQUES ===== */
-        <CapaDestaquesOrganizer properties={properties} setProperties={setProperties} onEdit={(idx) => setOpenIdx(idx)} />
+        <CapaDestaquesOrganizer properties={properties} setProperties={setProperties} onEdit={(idx) => setOpenIdx(idx)} q={q} />
       ) : (
         /* ===== LISTA ===== */
         <div className="space-y-3">
@@ -1237,16 +1245,20 @@ function ImoveisTab({ properties, setProperties, data }) {
 
 /* ===================== CAPA & DESTAQUES (organizar) ===================== */
 
-function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
+function CapaDestaquesOrganizer({ properties, setProperties, onEdit, q = "" }) {
   const upd = (i, np) => { const n = properties.slice(); n[i] = np; setProperties(n); };
   const withIdx = properties.map((p, i) => ({ p, i }));
+  const hit = (x) => propMatches(x.p, q); // respeita a busca do topo (título, texto bruto, etc.)
   // Capa e Destaques têm ORDEM PRÓPRIA (coverOrder / featuredOrder). Reordenar uma não
   // mexe na outra nem na listagem — cada lista é ordenada pelo seu campo.
   const bySort = (field) => (a, b) => (a.p[field] ?? a.i) - (b.p[field] ?? b.i);
-  const covers = withIdx.filter((x) => x.p.cover).sort(bySort("coverOrder"));
-  const feats = withIdx.filter((x) => x.p.featured).sort(bySort("featuredOrder"));
-  // A listagem do site segue a ordem do array; reordenar aqui troca a posição no array.
-  const published = withIdx.filter((x) => x.p.publicado);
+  // Listas COMPLETAS (para reordenar/adicionar com a ordem correta) e as exibidas (com a busca).
+  const coversAll = withIdx.filter((x) => x.p.cover).sort(bySort("coverOrder"));
+  const featsAll = withIdx.filter((x) => x.p.featured).sort(bySort("featuredOrder"));
+  const publishedAll = withIdx.filter((x) => x.p.publicado); // listagem segue a ordem do array
+  const covers = coversAll.filter(hit);
+  const feats = featsAll.filter(hit);
+  const published = publishedAll.filter(hit);
 
   // Reordena uma vitrine reescrevendo SÓ o seu campo de ordem (0..n-1) na sequência mostrada.
   const moveByField = (sortedItems, field, subIndex, dir) => {
@@ -1260,7 +1272,7 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
   };
   // A listagem reordena trocando posições no array (é a ordem que o site usa por padrão).
   const moveInArray = (subIndex, dir) => {
-    const idxs = published.map((x) => x.i);
+    const idxs = publishedAll.map((x) => x.i);
     const a = idxs[subIndex], b = idxs[subIndex + dir];
     if (a == null || b == null) return;
     const n = properties.slice();
@@ -1282,11 +1294,12 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
           hint="Carrossel grande do topo do site. A ordem aqui é a ordem em que giram. (A foto de capa de cada um é escolhida no editor.)"
           items={covers}
           candidates={withIdx.filter((x) => !x.p.cover)}
-          onUp={(k) => moveByField(covers, "coverOrder", k, -1)}
-          onDown={(k) => moveByField(covers, "coverOrder", k, 1)}
+          onUp={(k) => moveByField(coversAll, "coverOrder", k, -1)}
+          onDown={(k) => moveByField(coversAll, "coverOrder", k, 1)}
           onRemove={(i) => upd(i, { ...properties[i], cover: false })}
-          onAdd={(i) => addTo(i, "cover", "coverOrder", covers)}
+          onAdd={(i) => addTo(i, "cover", "coverOrder", coversAll)}
           onEdit={onEdit}
+          searching={!!q}
         />
         <OrganizerColumn
           title="⭐ Destaques"
@@ -1294,11 +1307,12 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
           hint="Seção “Destaques em imóveis” da home. Mostra até 8, na ordem abaixo."
           items={feats}
           candidates={withIdx.filter((x) => !x.p.featured)}
-          onUp={(k) => moveByField(feats, "featuredOrder", k, -1)}
-          onDown={(k) => moveByField(feats, "featuredOrder", k, 1)}
+          onUp={(k) => moveByField(featsAll, "featuredOrder", k, -1)}
+          onDown={(k) => moveByField(featsAll, "featuredOrder", k, 1)}
           onRemove={(i) => upd(i, { ...properties[i], featured: false })}
-          onAdd={(i) => addTo(i, "featured", "featuredOrder", feats)}
+          onAdd={(i) => addTo(i, "featured", "featuredOrder", featsAll)}
           onEdit={onEdit}
+          searching={!!q}
         />
       </div>
       <OrganizerColumn
@@ -1309,12 +1323,13 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
         onUp={(k) => moveInArray(k, -1)}
         onDown={(k) => moveInArray(k, 1)}
         onEdit={onEdit}
+        searching={!!q}
       />
     </div>
   );
 }
 
-function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown, onRemove, onAdd, onEdit }) {
+function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown, onRemove, onAdd, onEdit, searching = false }) {
   const arrow = "flex h-5 w-6 items-center justify-center rounded text-ink-muted hover:bg-black/5 disabled:opacity-25";
   return (
     <div className="min-w-0 overflow-hidden rounded-xl border border-black/10 bg-white p-4" style={{ borderTop: `3px solid ${accent}` }}>
@@ -1323,13 +1338,14 @@ function OrganizerColumn({ title, accent, hint, items, candidates, onUp, onDown,
         <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{items.length}</span>
       </div>
       <p className="mb-3 text-xs text-ink-muted">{hint}</p>
+      {searching && items.length > 0 && <p className="mb-2 text-[11px] text-ink-muted">Resultados da busca — limpe a busca para reordenar.</p>}
       <div className="space-y-2">
-        {items.length === 0 && <div className="rounded-lg border border-dashed border-black/15 p-5 text-center text-xs text-ink-muted">Nenhum imóvel aqui ainda. Adicione abaixo.</div>}
+        {items.length === 0 && <div className="rounded-lg border border-dashed border-black/15 p-5 text-center text-xs text-ink-muted">{searching ? "Nenhum resultado para a busca." : "Nenhum imóvel aqui ainda. Adicione abaixo."}</div>}
         {items.map(({ p, i }, k) => (
           <div key={p.id || i} className="flex min-w-0 items-center gap-2 rounded-lg border border-black/10 p-2">
             <div className="flex shrink-0 flex-col">
-              <button onClick={() => onUp(k)} disabled={k === 0} aria-label="Subir" className={arrow}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg></button>
-              <button onClick={() => onDown(k)} disabled={k === items.length - 1} aria-label="Descer" className={arrow}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></button>
+              <button onClick={() => onUp(k)} disabled={searching || k === 0} aria-label="Subir" className={arrow}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 15l6-6 6 6" /></svg></button>
+              <button onClick={() => onDown(k)} disabled={searching || k === items.length - 1} aria-label="Descer" className={arrow}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></button>
             </div>
             {p.images?.[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
