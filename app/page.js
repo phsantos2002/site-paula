@@ -16,8 +16,9 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const c = await getContent();
   const all = await getPublishedProperties();
-  const featured = all.filter((p) => p.featured).slice(0, 8);
-  const coverProperties = all.filter((p) => p.cover);
+  // Cada vitrine tem ordem própria (independente da ordem da listagem/array).
+  const featured = all.filter((p) => p.featured).sort((a, b) => a.featuredOrder - b.featuredOrder).slice(0, 8);
+  const coverProperties = all.filter((p) => p.cover).sort((a, b) => a.coverOrder - b.coverOrder);
   // Template ativo (aba Templates do admin). Hoje só o "classico" existe; quando novos
   // layouts entrarem, o branch de composição da home acontece a partir deste valor.
   const template = c.template || "classico";

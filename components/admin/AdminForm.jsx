@@ -1239,18 +1239,40 @@ function ImoveisTab({ properties, setProperties, data }) {
 
 function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
   const upd = (i, np) => { const n = properties.slice(); n[i] = np; setProperties(n); };
-  const moveInSubset = (flag, subIndex, dir) => {
-    const idxs = properties.map((_, i) => i).filter((i) => properties[i][flag]);
+  const withIdx = properties.map((p, i) => ({ p, i }));
+  // Capa e Destaques têm ORDEM PRÓPRIA (coverOrder / featuredOrder). Reordenar uma não
+  // mexe na outra nem na listagem — cada lista é ordenada pelo seu campo.
+  const bySort = (field) => (a, b) => (a.p[field] ?? a.i) - (b.p[field] ?? b.i);
+  const covers = withIdx.filter((x) => x.p.cover).sort(bySort("coverOrder"));
+  const feats = withIdx.filter((x) => x.p.featured).sort(bySort("featuredOrder"));
+  // A listagem do site segue a ordem do array; reordenar aqui troca a posição no array.
+  const published = withIdx.filter((x) => x.p.publicado);
+
+  // Reordena uma vitrine reescrevendo SÓ o seu campo de ordem (0..n-1) na sequência mostrada.
+  const moveByField = (sortedItems, field, subIndex, dir) => {
+    const j = subIndex + dir;
+    if (j < 0 || j >= sortedItems.length) return;
+    const order = sortedItems.map((x) => x.i);
+    [order[subIndex], order[j]] = [order[j], order[subIndex]];
+    const n = properties.slice();
+    order.forEach((globalIdx, pos) => { n[globalIdx] = { ...n[globalIdx], [field]: pos }; });
+    setProperties(n);
+  };
+  // A listagem reordena trocando posições no array (é a ordem que o site usa por padrão).
+  const moveInArray = (subIndex, dir) => {
+    const idxs = published.map((x) => x.i);
     const a = idxs[subIndex], b = idxs[subIndex + dir];
     if (a == null || b == null) return;
     const n = properties.slice();
     [n[a], n[b]] = [n[b], n[a]];
     setProperties(n);
   };
-  const withIdx = properties.map((p, i) => ({ p, i }));
-  const covers = withIdx.filter((x) => x.p.cover);
-  const feats = withIdx.filter((x) => x.p.featured);
-  const published = withIdx.filter((x) => x.p.publicado);
+  // Ao adicionar numa vitrine, entra no FIM da lista (maior ordem + 1).
+  const addTo = (i, flag, field, list) => {
+    const maxOrder = list.reduce((m, x) => Math.max(m, x.p[field] ?? x.i), -1);
+    upd(i, { ...properties[i], [flag]: true, [field]: maxOrder + 1 });
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-2">
@@ -1260,10 +1282,10 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
           hint="Carrossel grande do topo do site. A ordem aqui é a ordem em que giram. (A foto de capa de cada um é escolhida no editor.)"
           items={covers}
           candidates={withIdx.filter((x) => !x.p.cover)}
-          onUp={(k) => moveInSubset("cover", k, -1)}
-          onDown={(k) => moveInSubset("cover", k, 1)}
+          onUp={(k) => moveByField(covers, "coverOrder", k, -1)}
+          onDown={(k) => moveByField(covers, "coverOrder", k, 1)}
           onRemove={(i) => upd(i, { ...properties[i], cover: false })}
-          onAdd={(i) => upd(i, { ...properties[i], cover: true })}
+          onAdd={(i) => addTo(i, "cover", "coverOrder", covers)}
           onEdit={onEdit}
         />
         <OrganizerColumn
@@ -1272,10 +1294,10 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
           hint="Seção “Destaques em imóveis” da home. Mostra até 8, na ordem abaixo."
           items={feats}
           candidates={withIdx.filter((x) => !x.p.featured)}
-          onUp={(k) => moveInSubset("featured", k, -1)}
-          onDown={(k) => moveInSubset("featured", k, 1)}
+          onUp={(k) => moveByField(feats, "featuredOrder", k, -1)}
+          onDown={(k) => moveByField(feats, "featuredOrder", k, 1)}
           onRemove={(i) => upd(i, { ...properties[i], featured: false })}
-          onAdd={(i) => upd(i, { ...properties[i], featured: true })}
+          onAdd={(i) => addTo(i, "featured", "featuredOrder", feats)}
           onEdit={onEdit}
         />
       </div>
@@ -1284,8 +1306,8 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit }) {
         accent="#0ea5e9"
         hint="Ordem em que os imóveis publicados aparecem na página “Imóveis” do site (ordenação padrão). O visitante ainda pode reordenar por preço/área."
         items={published}
-        onUp={(k) => moveInSubset("publicado", k, -1)}
-        onDown={(k) => moveInSubset("publicado", k, 1)}
+        onUp={(k) => moveInArray(k, -1)}
+        onDown={(k) => moveInArray(k, 1)}
         onEdit={onEdit}
       />
     </div>
