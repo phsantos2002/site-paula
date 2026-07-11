@@ -10,6 +10,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import PropertyGallery from "@/components/PropertyGallery";
 import PropertySpecs from "@/components/PropertySpecs";
 import StatusBadge from "@/components/StatusBadge";
+import ViewContentTracker from "@/components/ViewContentTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -90,8 +91,11 @@ export default async function PropertyPage({ params }) {
   ].join("\n");
   const wa = `https://wa.me/${c.contact.whatsapp || ""}?text=${encodeURIComponent(waMessage)}`;
 
+  const contentValue = p.price > 0 ? p.price : p.rentPrice;
+
   return (
     <main className="min-h-screen bg-white">
+      <ViewContentTracker id={p.code} name={p.title} value={contentValue} />
       <ThemeStyle colors={c.colors} />
       <Header brand={c.brand} contact={c.contact} nav={c.nav} header={c.header} />
       <div className="h-[85px] bg-ink" />
