@@ -8,6 +8,7 @@ const TABS = [
   { id: "imoveis", label: "Imóveis", icon: "M3 11l9-8 9 8M5 9.5V21h14V9.5" },
   { id: "equipe", label: "Equipe & Funil", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
   { id: "template", label: "Templates", icon: "M3 3h18v18H3zM3 9h18M9 21V9" },
+  { id: "tracking", label: "Tracking", icon: "M3 3v18h18M7 14l4-4 3 3 5-6" },
   { id: "contatos", label: "Contatos", icon: "M22 5H2v14h20zM2 6l10 7 10-7" },
 ];
 
@@ -361,6 +362,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
           {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setProperties} data={data} />}
           {tab === "equipe" && <EquipeTab data={data} setSection={setSection} />}
           {tab === "template" && <TemplatesTab data={data} patch={patch} setSection={setSection} nav={tplNav} setNav={setTplNav} notify={setMsg} />}
+          {tab === "tracking" && <TrackingTab data={data} patch={patch} />}
         </div>
       </div>
 
@@ -1809,23 +1811,11 @@ function CapaTab({ data, patch }) {
 
 /* ===================== MARCA & CORES ===================== */
 
-function MarcaTab({ data, patch }) {
-  const b = data.brand;
-  const c = data.colors;
+/* ===================== TRACKING (Pixel, CAPI, Planilha) ===================== */
+
+function TrackingTab({ data, patch }) {
   return (
     <>
-      <Card title="Marca">
-        <Field label="Nome (parte 1)" value={b.name} onChange={(v) => patch("brand", "name", v)} />
-        <Field label="Nome destacado (parte 2)" value={b.nameHighlight} onChange={(v) => patch("brand", "nameHighlight", v)} />
-        <Field label="Subtítulo / profissão" value={b.tagline} onChange={(v) => patch("brand", "tagline", v)} />
-      </Card>
-      <Card title="SEO / Metadados (Google e redes sociais)">
-        <p className="-mt-2 text-xs text-ink-muted">Deixe em branco para gerar automaticamente a partir da marca.</p>
-        <Field label="Título da aba/navegador (vazio = automático)" value={data.seo?.metaTitle} onChange={(v) => patch("seo", "metaTitle", v)} placeholder={`${b.name} ${b.nameHighlight}${b.tagline ? ` | ${b.tagline}` : ""}`} />
-        <Field label="Nome do site ao compartilhar (vazio = automático)" value={data.seo?.siteName} onChange={(v) => patch("seo", "siteName", v)} />
-        <TextArea label="Descrição (aparece no Google e ao compartilhar o link)" value={data.seo?.description} onChange={(v) => patch("seo", "description", v)} />
-        <ImageField label="Imagem ao compartilhar / Open Graph (vazio = foto do “Sobre”)" value={data.seo?.ogImage} onChange={(v) => patch("seo", "ogImage", v)} />
-      </Card>
       <Card title="Pixel da Meta (Facebook / Instagram)">
         <p className="-mt-2 text-xs text-ink-muted">Cole o <strong>ID do Pixel</strong> (só números) do Gerenciador de Eventos da Meta. Ele passa a rastrear as visitas do site para anúncios. Deixe em branco para desligar. Não carrega no painel /admin.</p>
         <Field label="ID do Pixel da Meta" value={data.tracking?.metaPixelId} onChange={(v) => patch("tracking", "metaPixelId", (v || "").replace(/\D/g, ""))} placeholder="Ex.: 1712094889945962" />
@@ -1846,6 +1836,27 @@ function MarcaTab({ data, patch }) {
           placeholder="https://script.google.com/macros/s/.../exec"
           hint="Fica só no servidor, nunca aparece no site. Os dados dos leads (nome, e-mail, telefone) vão em texto legível para a SUA planilha."
         />
+      </Card>
+    </>
+  );
+}
+
+function MarcaTab({ data, patch }) {
+  const b = data.brand;
+  const c = data.colors;
+  return (
+    <>
+      <Card title="Marca">
+        <Field label="Nome (parte 1)" value={b.name} onChange={(v) => patch("brand", "name", v)} />
+        <Field label="Nome destacado (parte 2)" value={b.nameHighlight} onChange={(v) => patch("brand", "nameHighlight", v)} />
+        <Field label="Subtítulo / profissão" value={b.tagline} onChange={(v) => patch("brand", "tagline", v)} />
+      </Card>
+      <Card title="SEO / Metadados (Google e redes sociais)">
+        <p className="-mt-2 text-xs text-ink-muted">Deixe em branco para gerar automaticamente a partir da marca.</p>
+        <Field label="Título da aba/navegador (vazio = automático)" value={data.seo?.metaTitle} onChange={(v) => patch("seo", "metaTitle", v)} placeholder={`${b.name} ${b.nameHighlight}${b.tagline ? ` | ${b.tagline}` : ""}`} />
+        <Field label="Nome do site ao compartilhar (vazio = automático)" value={data.seo?.siteName} onChange={(v) => patch("seo", "siteName", v)} />
+        <TextArea label="Descrição (aparece no Google e ao compartilhar o link)" value={data.seo?.description} onChange={(v) => patch("seo", "description", v)} />
+        <ImageField label="Imagem ao compartilhar / Open Graph (vazio = foto do “Sobre”)" value={data.seo?.ogImage} onChange={(v) => patch("seo", "ogImage", v)} />
       </Card>
       <Card title="Cores do tema">
         <p className="-mt-2 text-xs text-ink-muted">Estas cores valem para o site inteiro. Veja onde cada uma aparece:</p>
