@@ -1,6 +1,7 @@
 import { Poppins } from "next/font/google";
 import { siteUrl } from "@/lib/site";
 import { getContent, seoFor } from "@/lib/content";
+import MetaPixel from "@/components/MetaPixel";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -45,10 +46,15 @@ export async function generateMetadata() {
   };
 }
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const content = await getContent();
+  const pixelId = content?.tracking?.metaPixelId || "";
   return (
     <html lang="pt-BR" className={poppins.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <MetaPixel pixelId={pixelId} />
+      </body>
     </html>
   );
 }

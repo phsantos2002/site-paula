@@ -1826,6 +1826,10 @@ function MarcaTab({ data, patch }) {
         <TextArea label="Descrição (aparece no Google e ao compartilhar o link)" value={data.seo?.description} onChange={(v) => patch("seo", "description", v)} />
         <ImageField label="Imagem ao compartilhar / Open Graph (vazio = foto do “Sobre”)" value={data.seo?.ogImage} onChange={(v) => patch("seo", "ogImage", v)} />
       </Card>
+      <Card title="Pixel da Meta (Facebook / Instagram)">
+        <p className="-mt-2 text-xs text-ink-muted">Cole o <strong>ID do Pixel</strong> (só números) do Gerenciador de Eventos da Meta. Ele passa a rastrear as visitas do site para anúncios. Deixe em branco para desligar. Não carrega no painel /admin.</p>
+        <Field label="ID do Pixel da Meta" value={data.tracking?.metaPixelId} onChange={(v) => patch("tracking", "metaPixelId", (v || "").replace(/\D/g, ""))} placeholder="Ex.: 1712094889945962" />
+      </Card>
       <Card title="Cores do tema">
         <p className="-mt-2 text-xs text-ink-muted">Estas cores valem para o site inteiro. Veja onde cada uma aparece:</p>
         <ColorField
