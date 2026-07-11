@@ -47,7 +47,7 @@ export default async function Home() {
       <AboutSection about={c.about} contact={c.contact} />
       <FeaturedCarousel properties={featured} featured={c.featured} />
       <CitiesSection cities={c.cities} properties={all} />
-      <RegisterForm register={c.register} />
+      <RegisterForm register={c.register} pixelId={c.tracking?.metaPixelId || ""} />
       <Footer brand={c.brand} contact={c.contact} footer={c.footer} />
       <WhatsAppFloat contact={c.contact} />
     </main>

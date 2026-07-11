@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { newEventId } from "@/components/metaTrack";
 
-export default function RegisterForm({ register = {} }) {
+export default function RegisterForm({ register = {}, pixelId = "" }) {
   const [sent, setSent] = useState(false);
   const [agree, setAgree] = useState(false);
   const [sending, setSending] = useState(false);
@@ -15,18 +15,33 @@ export default function RegisterForm({ register = {} }) {
     setSending(true);
     setError("");
     const fd = new FormData(e.currentTarget);
+    const nome = String(fd.get("nome") || "").trim();
+    const email = String(fd.get("email") || "").trim();
+    const telefone = String(fd.get("telefone") || "").trim();
+    const firstName = nome.split(/\s+/)[0] || "";
+    const lastName = nome.split(/\s+/).slice(1).join(" ");
     // Conversão "Lead": dispara no Pixel do navegador e manda o MESMO eventId ao servidor
     // (que reenvia pela CAPI) para a Meta deduplicar.
     const eventId = newEventId();
     try {
       if (typeof window !== "undefined" && window.fbq) {
+        // Correspondência avançada MANUAL: reenvia o Pixel com os dados do cliente (o
+        // próprio Pixel normaliza e faz o hash). Garante o match sem depender da detecção.
+        if (pixelId) {
+          const am = {};
+          if (email) am.em = email.toLowerCase();
+          if (telefone) am.ph = telefone.replace(/\D/g, "");
+          if (firstName) am.fn = firstName.toLowerCase();
+          if (lastName) am.ln = lastName.toLowerCase();
+          window.fbq("init", pixelId, am);
+        }
         window.fbq("track", "Lead", { content_name: "Cadastro de imóvel" }, { eventID: eventId });
       }
     } catch { /* pixel ausente/bloqueado — o servidor cobre via CAPI */ }
     const payload = {
-      nome: fd.get("nome"),
-      email: fd.get("email"),
-      telefone: fd.get("telefone"),
+      nome,
+      email,
+      telefone,
       tipo: fd.get("tipo"),
       mensagem: fd.get("mensagem"),
       website: fd.get("website"), // honeypot
