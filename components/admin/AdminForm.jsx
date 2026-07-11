@@ -1826,6 +1826,13 @@ function TrackingTab({ data, patch }) {
           placeholder="Cole aqui o token gerado na Meta"
           hint="Melhora o rastreamento enviando as conversões pelo servidor (recupera o que o navegador bloqueia). É um segredo: fica só no servidor, nunca aparece no site."
         />
+        <Field
+          label="Código de teste (temporário — apague depois)"
+          value={data.tracking?.testEventCode}
+          onChange={(v) => patch("tracking", "testEventCode", (v || "").trim())}
+          placeholder="Ex.: TEST78166"
+        />
+        <p className="-mt-1 text-xs text-ink-muted">Só para a aba <strong>Eventos de teste</strong> da Meta. Cole o código, teste, e <strong>apague</strong> — deixar preenchido faz os eventos reais irem só para o teste.</p>
       </Card>
       <Card title="Planilha de eventos (Google Sheets)">
         <p className="-mt-2 text-xs text-ink-muted">Registra cada evento (visitas, imóveis vistos, leads e cliques no WhatsApp) numa planilha do Google, ao vivo. Cole aqui o <strong>link do Web App</strong> do Google Apps Script (peça o passo a passo). Vazio = desligado.</p>
