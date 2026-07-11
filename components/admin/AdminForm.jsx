@@ -1829,6 +1829,13 @@ function MarcaTab({ data, patch }) {
       <Card title="Pixel da Meta (Facebook / Instagram)">
         <p className="-mt-2 text-xs text-ink-muted">Cole o <strong>ID do Pixel</strong> (só números) do Gerenciador de Eventos da Meta. Ele passa a rastrear as visitas do site para anúncios. Deixe em branco para desligar. Não carrega no painel /admin.</p>
         <Field label="ID do Pixel da Meta" value={data.tracking?.metaPixelId} onChange={(v) => patch("tracking", "metaPixelId", (v || "").replace(/\D/g, ""))} placeholder="Ex.: 1712094889945962" />
+        <SecretField
+          label="Token da API de Conversões (opcional)"
+          value={data.tracking?.metaCapiToken}
+          onChange={(v) => patch("tracking", "metaCapiToken", (v || "").trim())}
+          placeholder="Cole aqui o token gerado na Meta"
+          hint="Melhora o rastreamento enviando as conversões pelo servidor (recupera o que o navegador bloqueia). É um segredo: fica só no servidor, nunca aparece no site."
+        />
       </Card>
       <Card title="Cores do tema">
         <p className="-mt-2 text-xs text-ink-muted">Estas cores valem para o site inteiro. Veja onde cada uma aparece:</p>
@@ -2105,6 +2112,31 @@ function Field({ label, value, onChange, placeholder }) {
     <label className="block">
       <span className="mb-1 block text-sm font-medium text-ink-secondary">{label}</span>
       <input value={value || ""} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-lg border border-inputborder px-3 text-sm outline-none focus:border-primary focus:shadow-focus" />
+    </label>
+  );
+}
+
+// Campo para segredos (token). Mascarado por padrão, com botão mostrar/ocultar.
+function SecretField({ label, value, onChange, placeholder, hint }) {
+  const [show, setShow] = useState(false);
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-ink-secondary">{label}</span>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          value={value || ""}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          className="h-11 w-full rounded-lg border border-inputborder pl-3 pr-16 text-sm outline-none focus:border-primary focus:shadow-focus"
+        />
+        <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs font-semibold text-ink-secondary hover:bg-black/5">
+          {show ? "Ocultar" : "Mostrar"}
+        </button>
+      </div>
+      {hint && <p className="mt-1 text-xs text-ink-muted">{hint}</p>}
     </label>
   );
 }
