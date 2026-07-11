@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
+import { metaTrack } from "@/components/metaTrack";
 
 // Pixel da Meta (Facebook/Instagram). Só carrega quando há um ID configurado no painel
 // (content.tracking.metaPixelId) e nunca no /admin. O código-base já dispara o 1º PageView;
@@ -19,6 +20,21 @@ export default function MetaPixel({ pixelId }) {
     if (firstRun.current) { firstRun.current = false; return; }
     if (typeof window !== "undefined" && window.fbq) window.fbq("track", "PageView");
   }, [pathname, active]);
+
+  // Clique em qualquer link de WhatsApp (wa.me) = conversão "Lead" (Pixel + CAPI).
+  // Um único listener cobre o site inteiro (cabeçalho, rodapé, botão flutuante, imóvel).
+  useEffect(() => {
+    if (!active) return;
+    const onClick = (e) => {
+      const a = e.target?.closest?.("a[href]");
+      const href = a?.getAttribute("href") || "";
+      if (/wa\.me|api\.whatsapp\.com|web\.whatsapp\.com|whatsapp:\/\//i.test(href)) {
+        metaTrack("Lead", { customData: { content_name: "WhatsApp", channel: "whatsapp" } });
+      }
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [active]);
 
   if (!active) return null;
   return (

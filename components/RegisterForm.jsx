@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { newEventId } from "@/components/metaTrack";
 
 export default function RegisterForm({ register = {} }) {
   const [sent, setSent] = useState(false);
@@ -14,6 +15,14 @@ export default function RegisterForm({ register = {} }) {
     setSending(true);
     setError("");
     const fd = new FormData(e.currentTarget);
+    // Conversão "Lead": dispara no Pixel do navegador e manda o MESMO eventId ao servidor
+    // (que reenvia pela CAPI) para a Meta deduplicar.
+    const eventId = newEventId();
+    try {
+      if (typeof window !== "undefined" && window.fbq) {
+        window.fbq("track", "Lead", { content_name: "Cadastro de imóvel" }, { eventID: eventId });
+      }
+    } catch { /* pixel ausente/bloqueado — o servidor cobre via CAPI */ }
     const payload = {
       nome: fd.get("nome"),
       email: fd.get("email"),
@@ -21,6 +30,8 @@ export default function RegisterForm({ register = {} }) {
       tipo: fd.get("tipo"),
       mensagem: fd.get("mensagem"),
       website: fd.get("website"), // honeypot
+      eventId,
+      eventSourceUrl: typeof window !== "undefined" ? window.location.href : "",
     };
     try {
       const res = await fetch("/api/leads", {
