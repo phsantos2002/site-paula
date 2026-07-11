@@ -9,10 +9,14 @@ export function metaTrack(eventName, opts = {}) {
   if (typeof window === "undefined") return null;
   const eventId = opts.eventId || newEventId();
   const customData = opts.customData || {};
-  try {
-    if (window.fbq) window.fbq("track", eventName, customData, { eventID: eventId });
-  } catch {
-    /* pixel ausente/bloqueado — segue para o CAPI */
+  const usePixel = opts.pixel !== false; // false = não dispara no Pixel do navegador
+  const toMeta = opts.toMeta !== false;  // false = não reenvia à Meta (só planilha)
+  if (usePixel) {
+    try {
+      if (window.fbq) window.fbq("track", eventName, customData, { eventID: eventId });
+    } catch {
+      /* pixel ausente/bloqueado — segue para o CAPI/planilha */
+    }
   }
   try {
     fetch("/api/meta/capi", {
@@ -25,6 +29,7 @@ export function metaTrack(eventName, opts = {}) {
         eventSourceUrl: window.location.href,
         customData,
         userData: opts.userData || {},
+        toMeta,
       }),
     }).catch(() => {});
   } catch {

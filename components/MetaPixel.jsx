@@ -17,8 +17,11 @@ export default function MetaPixel({ pixelId }) {
 
   useEffect(() => {
     if (!active) return;
-    if (firstRun.current) { firstRun.current = false; return; }
-    if (typeof window !== "undefined" && window.fbq) window.fbq("track", "PageView");
+    // Meta: PageView do navegador nas trocas de rota (a 1ª já vem do código-base).
+    if (!firstRun.current && typeof window !== "undefined" && window.fbq) window.fbq("track", "PageView");
+    firstRun.current = false;
+    // Planilha: registra TODA visita (inclusive a 1ª), sem reenviar à Meta.
+    metaTrack("PageView", { pixel: false, toMeta: false });
   }, [pathname, active]);
 
   // Clique em qualquer link de WhatsApp (wa.me) = conversão "Lead" (Pixel + CAPI).

@@ -1837,6 +1837,16 @@ function MarcaTab({ data, patch }) {
           hint="Melhora o rastreamento enviando as conversões pelo servidor (recupera o que o navegador bloqueia). É um segredo: fica só no servidor, nunca aparece no site."
         />
       </Card>
+      <Card title="Planilha de eventos (Google Sheets)">
+        <p className="-mt-2 text-xs text-ink-muted">Registra cada evento (visitas, imóveis vistos, leads e cliques no WhatsApp) numa planilha do Google, ao vivo. Cole aqui o <strong>link do Web App</strong> do Google Apps Script (peça o passo a passo). Vazio = desligado.</p>
+        <SecretField
+          label="Link da planilha (webhook do Apps Script)"
+          value={data.tracking?.sheetWebhookUrl}
+          onChange={(v) => patch("tracking", "sheetWebhookUrl", (v || "").trim())}
+          placeholder="https://script.google.com/macros/s/.../exec"
+          hint="Fica só no servidor, nunca aparece no site. Os dados dos leads (nome, e-mail, telefone) vão em texto legível para a SUA planilha."
+        />
+      </Card>
       <Card title="Cores do tema">
         <p className="-mt-2 text-xs text-ink-muted">Estas cores valem para o site inteiro. Veja onde cada uma aparece:</p>
         <ColorField
