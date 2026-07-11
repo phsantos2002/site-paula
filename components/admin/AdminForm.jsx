@@ -2138,6 +2138,9 @@ function Field({ label, value, onChange, placeholder }) {
 }
 
 // Campo para segredos (token). Mascarado por padrão, com botão mostrar/ocultar.
+// Campo para segredos (token/URL). NÃO usa type="password" de propósito: isso evita que o
+// navegador preencha automaticamente a SENHA do login do admin aqui. Em vez disso é um
+// input de texto mascarado por CSS (bolinhas), com o toggle mostrar/ocultar.
 function SecretField({ label, value, onChange, placeholder, hint }) {
   const [show, setShow] = useState(false);
   return (
@@ -2145,12 +2148,19 @@ function SecretField({ label, value, onChange, placeholder, hint }) {
       <span className="mb-1 block text-sm font-medium text-ink-secondary">{label}</span>
       <div className="relative">
         <input
-          type={show ? "text" : "password"}
+          type="text"
           value={value || ""}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
           spellCheck={false}
+          name="config-secret"
+          data-1p-ignore="true"
+          data-lpignore="true"
+          data-form-type="other"
+          style={{ WebkitTextSecurity: show ? "none" : "disc" }}
           className="h-11 w-full rounded-lg border border-inputborder pl-3 pr-16 text-sm outline-none focus:border-primary focus:shadow-focus"
         />
         <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs font-semibold text-ink-secondary hover:bg-black/5">
