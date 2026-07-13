@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatBRL } from "@/lib/format";
 import PropertySpecs from "./PropertySpecs";
 import StatusBadge, { StatusRibbon } from "./StatusBadge";
+import { preloadAll } from "@/components/imagePreload";
 
 function Badges({ operation, status }) {
   return (
@@ -24,15 +25,18 @@ function Badges({ operation, status }) {
 
 function Gallery({ images = [], alt, heightClass, status }) {
   const [i, setI] = useState(0);
+  const preloaded = useRef(false);
   const imgs = images.length ? images : ["https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80"];
   const go = (e, d) => {
     e.preventDefault();
     e.stopPropagation();
     setI((v) => (v + d + imgs.length) % imgs.length);
   };
+  // Pré-carrega as demais fotos do card só ao passar o mouse (mantém a página leve).
+  const warm = () => { if (!preloaded.current) { preloaded.current = true; preloadAll(imgs); } };
   return (
-    <div className={`group/gal relative w-full overflow-hidden ${heightClass}`}>
-      <img src={imgs[i]} alt={alt} className="h-full w-full object-cover" />
+    <div onMouseEnter={warm} className={`group/gal relative w-full overflow-hidden ${heightClass}`}>
+      <img src={imgs[i]} alt={alt} decoding="async" className="h-full w-full object-cover" />
       <StatusRibbon status={status} />
       {imgs.length > 1 && (
         <>

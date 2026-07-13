@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { formatBRL } from "@/lib/format";
 import PropertySpecs from "./PropertySpecs";
 import StatusBadge, { StatusRibbon } from "./StatusBadge";
+import { preloadAll } from "@/components/imagePreload";
 
 function HeroCard({ p, badge, button }) {
   const img = p.coverImage || p.images?.[0];
@@ -53,6 +54,11 @@ export default function Hero({ hero = {}, coverProperties = [] }) {
     return () => clearInterval(t);
   }, [many, slides.length, intervalMs]);
 
+  // Pré-carrega TODAS as imagens da capa (poucos slides) para o giro ser instantâneo.
+  useEffect(() => {
+    preloadAll(slides.map((s) => s.coverImage || s.images?.[0]).filter(Boolean));
+  }, [slides]);
+
   const idx = has ? i % slides.length : 0;
   const current = has ? slides[idx] : null;
   const bg = current?.coverImage || current?.images?.[0] || hero.image;
@@ -60,7 +66,7 @@ export default function Hero({ hero = {}, coverProperties = [] }) {
 
   return (
     <section className="relative flex min-h-[560px] w-full items-center overflow-hidden bg-ink md:min-h-[634px]">
-      <img key={bg} src={bg} alt="Banner" className="hero-fade absolute inset-0 h-full w-full object-cover" />
+      <img key={bg} src={bg} alt="Banner" decoding="async" className="hero-fade absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-black/50" aria-hidden />
 
       <div className="relative z-10 w-full px-6 pt-[110px] pb-24 md:px-[60px] md:pb-16">

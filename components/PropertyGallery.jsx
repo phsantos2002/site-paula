@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePreloadAround } from "@/components/imagePreload";
 
 export default function PropertyGallery({ images = [], alt }) {
   const imgs = images.length
@@ -9,6 +10,7 @@ export default function PropertyGallery({ images = [], alt }) {
   const [i, setI] = useState(0);
   const [open, setOpen] = useState(false);
   const go = (d) => setI((v) => (v + d + imgs.length) % imgs.length);
+  usePreloadAround(imgs, i); // deixa a próxima/anterior prontas (troca sem atraso)
 
   // teclado quando o lightbox está aberto
   useEffect(() => {
@@ -34,6 +36,7 @@ export default function PropertyGallery({ images = [], alt }) {
           src={imgs[i]}
           alt={alt}
           onClick={() => setOpen(true)}
+          decoding="async"
           className="h-full w-full cursor-zoom-in object-cover"
         />
         {imgs.length > 1 && (
