@@ -1264,10 +1264,13 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit, q = "" }) {
   // Capa e Destaques têm ORDEM PRÓPRIA (coverOrder / featuredOrder). Reordenar uma não
   // mexe na outra nem na listagem — cada lista é ordenada pelo seu campo.
   const bySort = (field) => (a, b) => (a.p[field] ?? a.i) - (b.p[field] ?? b.i);
+  // A Vitrine só lida com imóveis PUBLICADOS (é o que o site mostra). Rascunhos não entram
+  // na capa/destaques nem na listagem — nem como opção de adicionar.
+  const pub = (x) => x.p.publicado;
   // Listas COMPLETAS (para reordenar/adicionar com a ordem correta) e as exibidas (com a busca).
-  const coversAll = withIdx.filter((x) => x.p.cover).sort(bySort("coverOrder"));
-  const featsAll = withIdx.filter((x) => x.p.featured).sort(bySort("featuredOrder"));
-  const publishedAll = withIdx.filter((x) => x.p.publicado); // listagem segue a ordem do array
+  const coversAll = withIdx.filter((x) => x.p.cover && pub(x)).sort(bySort("coverOrder"));
+  const featsAll = withIdx.filter((x) => x.p.featured && pub(x)).sort(bySort("featuredOrder"));
+  const publishedAll = withIdx.filter(pub); // listagem segue a ordem do array
   const covers = coversAll.filter(hit);
   const feats = featsAll.filter(hit);
   const published = publishedAll.filter(hit);
@@ -1305,7 +1308,7 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit, q = "" }) {
           accent="#EFB810"
           hint="Carrossel grande do topo do site. A ordem aqui é a ordem em que giram. (A foto de capa de cada um é escolhida no editor.)"
           items={covers}
-          candidates={withIdx.filter((x) => !x.p.cover)}
+          candidates={withIdx.filter((x) => !x.p.cover && pub(x))}
           onUp={(k) => moveByField(coversAll, "coverOrder", k, -1)}
           onDown={(k) => moveByField(coversAll, "coverOrder", k, 1)}
           onRemove={(i) => upd(i, { ...properties[i], cover: false })}
@@ -1318,7 +1321,7 @@ function CapaDestaquesOrganizer({ properties, setProperties, onEdit, q = "" }) {
           accent="#4f46e5"
           hint="Seção “Destaques em imóveis” da home. Mostra até 8, na ordem abaixo."
           items={feats}
-          candidates={withIdx.filter((x) => !x.p.featured)}
+          candidates={withIdx.filter((x) => !x.p.featured && pub(x))}
           onUp={(k) => moveByField(featsAll, "featuredOrder", k, -1)}
           onDown={(k) => moveByField(featsAll, "featuredOrder", k, 1)}
           onRemove={(i) => upd(i, { ...properties[i], featured: false })}
