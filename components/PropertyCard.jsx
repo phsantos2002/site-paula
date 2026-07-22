@@ -141,7 +141,7 @@ export default function PropertyCard({ p, variant = "list", contact, brand, base
           <p className="text-xs text-ink-muted">{p.city}, {p.state}</p>
           <PropertySpecs p={p} className="mt-2" />
         </a>
-        {waLink && <WhatsAppButton href={waLink} label={waLabel} className="mt-4 w-full md:mt-auto md:w-auto md:self-start" />}
+        {waLink && <WhatsAppButton href={waLink} label={waLabel} className="mt-5 w-full md:mt-6 md:w-auto md:self-start" />}
       </div>
     </div>
   );
