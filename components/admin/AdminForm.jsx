@@ -147,8 +147,35 @@ async function compressImage(file) {
   return file;
 }
 
+// Converte HEIC/HEIF (padrão de foto do iPhone) para JPG no navegador — Chrome e o site
+// não exibem HEIC. Tenta a biblioteca (carregada sob demanda); se o navegador decodificar
+// nativamente (Safari), usa canvas; senão, avisa para enviar em JPG.
+async function heicToJpeg(file) {
+  const isHeic = /image\/hei[cf]/i.test(file.type || "") || /\.hei[cf]$/i.test(file.name || "");
+  if (!isHeic) return file;
+  const base = (file.name || "foto").replace(/\.\w+$/, "");
+  try {
+    const { default: heic2any } = await import("heic2any");
+    const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.88 });
+    const blob = Array.isArray(out) ? out[0] : out;
+    return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+  } catch {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      canvas.getContext("2d").drawImage(bitmap, 0, 0);
+      const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.88));
+      if (blob) return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+    } catch { /* segue para o erro abaixo */ }
+    throw new Error("Não foi possível converter a foto HEIC neste navegador. Envie em JPG ou PNG.");
+  }
+}
+
 async function uploadImage(file) {
-  const prepared = await compressImage(file);
+  const jpegReady = await heicToJpeg(file); // iPhone (HEIC) vira JPG antes de tudo
+  const prepared = await compressImage(jpegReady);
   const fd = new FormData();
   fd.append("file", prepared);
   const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
