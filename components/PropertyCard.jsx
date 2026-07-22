@@ -125,12 +125,14 @@ export default function PropertyCard({ p, variant = "list", contact, brand, base
     );
   }
 
-  // variant "list" — card horizontal
+  // variant "list" — card horizontal. No desktop a coluna da foto é ABSOLUTA e acompanha
+  // a altura do conteúdo (self-stretch): foto vertical não estica o card — corta com
+  // object-cover, e todos os cards ficam na mesma proporção.
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white transition-shadow hover:shadow-lg md:flex-row">
-      <a href={href} className="relative block md:w-[360px] md:shrink-0">
+      <a href={href} className="relative block md:w-[360px] md:shrink-0 md:self-stretch">
         <Badges operation={p.operation} status={p.status} />
-        <Gallery images={p.images} alt={p.title} heightClass="h-56 md:h-full" status={p.status} />
+        <Gallery images={p.images} alt={p.title} heightClass="h-56 md:absolute md:inset-0 md:h-auto" status={p.status} />
       </a>
       <div className="flex flex-1 flex-col overflow-hidden p-5">
         <a href={href} className="flex flex-col gap-1.5">
