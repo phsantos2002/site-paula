@@ -31,14 +31,37 @@ export async function POST(req) {
     if (!file || typeof file === "string") {
       return NextResponse.json({ ok: false, error: "Nenhum arquivo." }, { status: 400 });
     }
-    const bytes = Buffer.from(await file.arrayBuffer());
-    const safe = (file.name || "imagem").replace(/[^a-zA-Z0-9._-]/g, "_");
+    let bytes = Buffer.from(await file.arrayBuffer());
+    let fileName = file.name || "imagem";
+    let contentType = guessType(file);
+
+    // HEIC/HEIF (foto de iPhone): converte para JPG no servidor — navegadores não exibem
+    // HEIC, então nunca guardamos nesse formato. (O painel tenta converter antes; isto é a
+    // garantia para qualquer navegador.)
+    const isHeic = /image\/hei[cf]/i.test(contentType) || /\.hei[cf]$/i.test(fileName);
+    if (isHeic) {
+      try {
+        const mod = await import("heic-convert");
+        const convert = mod.default || mod;
+        const out = await convert({ buffer: bytes, format: "JPEG", quality: 0.88 });
+        bytes = Buffer.from(out);
+        fileName = fileName.replace(/\.\w+$/, "") + ".jpg";
+        contentType = "image/jpeg";
+      } catch {
+        return NextResponse.json(
+          { ok: false, error: "Não foi possível converter a foto HEIC. Envie em JPG ou PNG." },
+          { status: 400 }
+        );
+      }
+    }
+
+    const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     const name = `${Date.now()}-${safe}`;
 
     const sb = getSupabase();
     if (sb) {
       const { error } = await sb.storage.from(UPLOAD_BUCKET).upload(name, bytes, {
-        contentType: guessType(file),
+        contentType,
         upsert: false,
       });
       if (error) throw error;

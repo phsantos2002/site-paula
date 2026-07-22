@@ -155,7 +155,8 @@ async function heicToJpeg(file) {
   if (!isHeic) return file;
   const base = (file.name || "foto").replace(/\.\w+$/, "");
   try {
-    const { default: heic2any } = await import("heic2any");
+    const mod = await import("heic2any");
+    const heic2any = mod.default || mod;
     const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.88 });
     const blob = Array.isArray(out) ? out[0] : out;
     return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
@@ -168,8 +169,9 @@ async function heicToJpeg(file) {
       canvas.getContext("2d").drawImage(bitmap, 0, 0);
       const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.88));
       if (blob) return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
-    } catch { /* segue para o erro abaixo */ }
-    throw new Error("Não foi possível converter a foto HEIC neste navegador. Envie em JPG ou PNG.");
+    } catch { /* sem conversão no navegador */ }
+    // Envia o original: o SERVIDOR converte HEIC -> JPG no upload (garantia final).
+    return file;
   }
 }
 
