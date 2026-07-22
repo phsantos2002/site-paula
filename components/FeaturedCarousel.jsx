@@ -1,6 +1,6 @@
 import PropertyCard from "./PropertyCard";
 
-export default function FeaturedCarousel({ properties = [], featured = {} }) {
+export default function FeaturedCarousel({ properties = [], featured = {}, contact, brand, baseUrl = "" }) {
   if (!properties.length) return null;
   return (
     <section className="bg-white py-12">
@@ -18,7 +18,7 @@ export default function FeaturedCarousel({ properties = [], featured = {} }) {
 
       <div className="no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-2 md:px-[60px]">
         {properties.map((p) => (
-          <PropertyCard key={p.id} p={p} variant="grid" />
+          <PropertyCard key={p.id} p={p} variant="grid" contact={contact} brand={brand} baseUrl={baseUrl} />
         ))}
       </div>
     </section>

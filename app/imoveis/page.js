@@ -1,5 +1,6 @@
 import { getContent, seoFor } from "@/lib/content";
 import { getPublishedProperties, PROPERTY_TYPES } from "@/lib/properties";
+import { siteUrl } from "@/lib/site";
 import ThemeStyle from "@/components/ThemeStyle";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -31,6 +32,9 @@ export default async function ImoveisPage({ searchParams }) {
         properties={properties}
         cities={cities}
         types={PROPERTY_TYPES}
+        contact={c.contact}
+        brand={c.brand}
+        baseUrl={siteUrl()}
         initial={{
           q: searchParams?.q || "",
           city: searchParams?.cidade || "",

@@ -1,5 +1,6 @@
 import { getContent } from "@/lib/content";
 import { getPublishedProperties } from "@/lib/properties";
+import { siteUrl } from "@/lib/site";
 import ThemeStyle from "@/components/ThemeStyle";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
@@ -45,7 +46,7 @@ export default async function Home() {
 
       <CorpRibbon ribbon={c.ribbon} />
       <AboutSection about={c.about} contact={c.contact} />
-      <FeaturedCarousel properties={featured} featured={c.featured} />
+      <FeaturedCarousel properties={featured} featured={c.featured} contact={c.contact} brand={c.brand} baseUrl={siteUrl()} />
       <CitiesSection cities={c.cities} properties={all} />
       <RegisterForm register={c.register} pixelId={c.tracking?.metaPixelId || ""} />
       <Footer brand={c.brand} contact={c.contact} footer={c.footer} />

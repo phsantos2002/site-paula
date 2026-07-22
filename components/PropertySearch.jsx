@@ -14,7 +14,7 @@ function priceOf(p) {
   return p.price > 0 ? p.price : p.rentPrice;
 }
 
-export default function PropertySearch({ properties = [], cities = [], types = [], initial = {} }) {
+export default function PropertySearch({ properties = [], cities = [], types = [], initial = {}, contact, brand, baseUrl = "" }) {
   const [q, setQ] = useState(initial.q || "");
   const [city, setCity] = useState(initial.city || "");
   const [operation, setOperation] = useState(initial.operation || "");
@@ -26,6 +26,10 @@ export default function PropertySearch({ properties = [], cities = [], types = [
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [sort, setSort] = useState("recent");
+  // Filtros começam RECOLHIDOS (o cliente vinha do anúncio e via só filtros). No mobile
+  // aparecem via botão; no desktop ficam sempre visíveis na lateral (não empurram nada).
+  const [showFilters, setShowFilters] = useState(false);
+  const activeCount = [q, city, operation, type, bedrooms > 0, parking > 0, areaMin, areaMax, priceMin, priceMax].filter(Boolean).length;
 
   function clearAll() {
     setQ(""); setCity(""); setOperation(""); setType("");
@@ -74,9 +78,20 @@ export default function PropertySearch({ properties = [], cities = [], types = [
         </label>
       </div>
 
+      {/* Botão de Filtros — só no mobile; recolhido por padrão para ver os imóveis de cara */}
+      <button
+        onClick={() => setShowFilters((s) => !s)}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3 text-sm font-semibold text-ink-secondary shadow-sm lg:hidden"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>
+        Filtros
+        {activeCount > 0 && <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold text-ink-cta">{activeCount}</span>}
+        <span className="text-[10px] opacity-70">{showFilters ? "▲" : "▼"}</span>
+      </button>
+
       <div className="mt-6 flex flex-col gap-8 lg:flex-row">
-        {/* Filtros */}
-        <aside className="w-full shrink-0 lg:w-72">
+        {/* Filtros — escondidos no mobile até tocar em "Filtros"; sempre visíveis no desktop */}
+        <aside className={`${showFilters ? "block" : "hidden"} w-full shrink-0 lg:block lg:w-72`}>
           <div className="space-y-5 rounded-xl border border-black/10 bg-white p-5">
             <div className="flex items-center gap-2 rounded-lg border border-inputborder px-3">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A7A7A" strokeWidth="2"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
@@ -126,7 +141,7 @@ export default function PropertySearch({ properties = [], cities = [], types = [
               Nenhum imóvel encontrado com esses filtros.
             </div>
           ) : (
-            filtered.map((p) => <PropertyCard key={p.id} p={p} variant="list" />)
+            filtered.map((p) => <PropertyCard key={p.id} p={p} variant="list" contact={contact} brand={brand} baseUrl={baseUrl} />)
           )}
         </div>
       </div>
