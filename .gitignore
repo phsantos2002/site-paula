@@ -12,3 +12,4 @@ npm-debug.log*
 # Mapas mentais salvos localmente (modo sem Supabase)
 /data/mapas/
 /data/mapas-prontos.json
+/data/backups/
