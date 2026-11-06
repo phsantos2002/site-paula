@@ -3,6 +3,8 @@
    Diferenças da versão original: exportado como módulo ES; variáveis CSS com prefixo --mm-
    (não colidem com o tema do site); marca vem de G.marca / G.logo; "demandas" viram IMÓVEIS;
    modelos voltados a corretor de imóveis; mapas-modelo automáticos só se G.semear. */
+import { raizVisaoCeo, EXTRA_VISAO_CEO } from "../../../lib/mapasProntos";
+
 export default function MapaMental(G){
 "use strict";
 const {h, svg, icon, menuPopup, caixaDialogo, copiarTexto, setStatus, openPeek, onDbErr, editingNow, state} = G;
@@ -70,6 +72,8 @@ const MM_MODELOS_TODOS = [
     mmNo("WhatsApp",[mmF("Lista de transmissão",1),mmF("Clientes da carteira",1)]),
     mmNo("Resultado",[mmF("Leads",1),mmF("Visitas",1),mmF("Propostas",1)])])},
 
+  {id:"ceo", cat:"Gestão", nome:"Imobiliária · Visão do CEO", desc:"As 10 áreas da empresa: estratégia, captação, comercial…", extra:EXTRA_VISAO_CEO, gerar:raizVisaoCeo},
+
   {id:"campanha", cat:"Marketing", nome:"Campanha de anúncios", desc:"Objetivo, público, criativos, verba e métricas", gerar:()=>mmNo("Campanha · nome",[
     mmNo("Objetivo",[mmF("O que a pessoa deve fazer",1),mmF("Como vamos medir",1)]),
     mmNo("Público",[mmF("Quem é",1),mmF("Região",1),mmF("Objeções",2)]),
@@ -90,7 +94,7 @@ const MM_MODELOS_TODOS = [
     mmNo("Pauta",[MM_P,MM_P,MM_P]), mmNo("Participantes",[MM_P]), mmNo("Decisões",[MM_P,MM_P]),
     mmNo("Tarefas",[mmF("Quem",1),mmF("O quê",1),mmF("Até quando",1)]), mmNo("Pendências",[MM_P])])}
 ];
-const MM_MODELOS_USADOS = ["branco","brainstorm","captacao","divulgacao","campanha","semana","jornada","reuniao"];
+const MM_MODELOS_USADOS = ["branco","brainstorm","captacao","divulgacao","ceo","campanha","semana","jornada","reuniao"];
 const MM_MODELOS = MM_MODELOS_USADOS.map(id=>MM_MODELOS_TODOS.find(m=>m.id===id)).filter(Boolean);
 
 const MM_IC = {
@@ -536,7 +540,7 @@ function mmHome(){
     const b = h("button",{class:"mm-card mod",type:"button"});
     const fig = h("div",{class:"mm-card-fig"}); fig.innerHTML = mmMiniatura(md.id); b.appendChild(fig);
     b.appendChild(h("b",{}, md.nome)); b.appendChild(h("span",{}, md.cat+" · "+md.desc));
-    b.onclick = async ()=>{ const nome = await caixaDialogo("Nome do mapa", true); if(nome===null) return; mmCriar(nome.trim() || (md.id==="branco" ? "Meu novo mapa mental" : md.nome), md.gerar()); };
+    b.onclick = async ()=>{ const nome = await caixaDialogo("Nome do mapa", true); if(nome===null) return; mmCriar(nome.trim() || (md.id==="branco" ? "Meu novo mapa mental" : md.nome), md.gerar(), md.extra); };
     gm.appendChild(b);
   });
   H.appendChild(gm);
@@ -559,7 +563,7 @@ function mmEscolherModelo(){
     if(md.cat !== catAtual){ catAtual = md.cat; cx.appendChild(h("div",{class:"mm-cat"}, md.cat)); g = h("div",{class:"mm-modelos"}); cx.appendChild(g); }
     const b = h("button",{type:"button"}); b.innerHTML = mmMiniatura(md.id);
     b.appendChild(h("b",{}, md.nome)); b.appendChild(h("span",{}, md.desc));
-    b.onclick = async ()=>{ ov.remove(); const nome = await caixaDialogo("Nome do mapa", true); if(nome===null) return; mmCriar(nome.trim() || (md.id==="branco" ? "Meu novo mapa mental" : md.nome), md.gerar()); };
+    b.onclick = async ()=>{ ov.remove(); const nome = await caixaDialogo("Nome do mapa", true); if(nome===null) return; mmCriar(nome.trim() || (md.id==="branco" ? "Meu novo mapa mental" : md.nome), md.gerar(), md.extra); };
     g.appendChild(b);
   });
   const imp = h("button",{type:"button"}); imp.innerHTML = '<svg viewBox="0 0 150 60"><path d="M30 18h60M42 30h60M42 42h50" stroke="#BFA472" stroke-width="3" stroke-linecap="round"/></svg>';
