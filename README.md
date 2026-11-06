@@ -1,122 +1,86 @@
-# Paula Regina — Corretora de Imóveis
+# Site de corretor de imóveis (template white-label)
 
-Landing page construída em **Next.js 14 (App Router) + Tailwind CSS**, reproduzindo o design system da landing page do Grupo Kaza, adaptado para a corretora **Paula Regina**.
+Site + painel de administração para corretores de imóveis. A primeira instância é a da **Paula Regina** (São José dos Campos), mas o projeto é um **template revendável**: um deploy por cliente (Vercel + Supabase), com marca, equipe, funil e conteúdo editáveis pelo painel. Nenhum nome de cliente fica no código.
 
 ## Stack
-- Next.js 14 (App Router, JavaScript)
-- Tailwind CSS 3
-- Fonte Poppins via `next/font/google`
+- Next.js 14 (App Router, JavaScript) + Tailwind CSS 3
+- Supabase (banco + Storage) em produção; arquivos locais em desenvolvimento
+- Meta Pixel + API de Conversões (CAPI), planilha Google via webhook
 
 ## Como rodar
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
+npm run dev      # http://localhost:3000  ·  painel em /admin
 ```
 
-Build de produção:
-
-```bash
-npm run build
-npm start
-```
+Produção: `npm run build && npm start`. Para publicar, siga o [DEPLOY.md](DEPLOY.md).
 
 ## Estrutura
 
 ```
 app/
-  layout.js          # fonte Poppins + metadata
-  page.js            # composição das seções
-  globals.css        # tokens de design (CSS vars) + Tailwind
-components/
-  Header.jsx         # navbar sticky com gradiente / estado "stuck"
-  Hero.jsx           # banner full-viewport + H1
-  SearchBar.jsx      # barra de busca pill
-  CorpRibbon.jsx     # faixa âmbar de credenciais
-  ServicesCarousel.jsx
-  ExploreSection.jsx
-  MapSection.jsx
-  CitiesSection.jsx  # links por bairro
-  RegisterForm.jsx   # formulário de cadastro (com estado)
-  WhatsAppFloat.jsx
-  Footer.jsx
-tailwind.config.js   # paleta âmbar, raios pill, sombras
+  page.js                  # home (capa, sobre, destaques, bairros, formulário)
+  imoveis/page.js          # listagem com busca e filtros
+  imovel/[slug]/page.js    # página do imóvel
+  admin/page.js            # painel (login + AdminForm)
+  api/leads                # formulário do site (público) -> contato + Lead na CAPI
+  api/meta/capi            # eventos do navegador -> CAPI
+  api/admin/*              # rotas protegidas por sessão: login, logout, save (conteúdo),
+                           # properties, leads, upload, zip, migrate, mapas
+components/                # seções do site (Header, Hero, PropertyCard, MetaPixel…)
+components/admin/
+  AdminForm.jsx            # painel: abas, auto-save, imóveis (funil/lista), templates…
+  fields.jsx               # campos de formulário e upload de imagens compartilhados
+  MapaMentalTab.jsx        # aba Mapa mental (ponte React <-> módulo)
+  mapa/mapaMental.js       # módulo do mapa mental (JS puro, sem bibliotecas)
+lib/
+  content.js               # conteúdo padrão + seoFor() (fonte da verdade da marca)
+  properties.js            # modelo do imóvel, normalização e salvamento mesclado
+  leads.js                 # contatos do formulário
+  mapas.js                 # mapas mentais (um registro por mapa)
+  store.js / supabase.js   # leitura/gravação: Supabase se configurado, senão data/*.json
+  auth.js                  # sessão assinada (HMAC), senha e freio de tentativas
+  metaCapi.js, sheetLog.js # rastreamento
 ```
 
-## Painel de administração (`/admin`)
+## Painel (`/admin`)
 
-O conteúdo do site é editável por uma pessoa não-técnica, sem mexer no código.
+Abas: **Imóveis**, **Mapa mental**, **Equipe & Funil**, **Templates** (marca, cores, SEO, capa, seções, menu, formulário, rodapé), **Tracking** (Pixel, CAPI, planilha) e **Contatos**. Tudo é salvo automaticamente.
 
-- Acesse **http://localhost:3000/admin**
-- Senha definida em `.env.local` (`ADMIN_PASSWORD`). Padrão: `paula2026` — **troque antes de publicar**.
-- Abas disponíveis: **Contatos**, **Imóveis**, **Equipe & Funil**, **Capa**, **Marca & Cores** (inclui SEO), **Menu & Contato**, **Seções da Home**, **Formulário**, **Rodapé**.
-- Upload de imagens (capa, foto, cards) — salvas em `public/uploads/`.
-- Clique em **Salvar alterações** e atualize o site.
+### Imóveis
+- Visões **Funil (Kanban)** e **Lista**. O funil e a equipe vêm da aba *Equipe & Funil* (configuráveis por cliente). A última etapa do funil é sempre "no site": arrastar para ela publica.
+- Cadastro novo nasce como **rascunho** (não aparece no site). **Situação** vira badge no site: disponível, exclusividade, vendido, alugado.
+- **Entrada rápida** (texto bruto, fotos, operação, valor), links do Drive, checklist de divulgação (carrossel, reels, anúncio) e organizador da vitrine (Capa, Destaques e Listagem com ordens independentes).
+- Fotos do iPhone (HEIC) são convertidas para JPG (no navegador e, como garantia, no servidor).
 
-### Revenda / White-label (comercializar para outros corretores)
-O site é um **template revendável**: um deploy por cliente, tudo configurável pelo painel — **nada de “Paula Regina” fica preso no código**.
+### Mapa mental
+Editor de mapas mentais no estilo MindMaster, dentro do painel:
+- Modelos prontos (captação, divulgação, campanha de anúncios, pauta da semana, jornada do cliente, reunião), importar texto/Markdown, exportar PNG, SVG e Markdown.
+- 7 layouts, 9 temas, estilos de ramo, marcas (prioridade, progresso, bandeiras, emojis), notas, links, etiquetas, relações, resumos, limites, localizar, estrutura de tópicos, tela cheia e modo apresentação.
+- **Integração com imóveis:** um tópico pode ser **vinculado a um imóvel** (clicar no selo abre o imóvel no editor) ou **virar um imóvel rascunho**, com o caminho do tópico no texto bruto.
+- Atalhos: Tab (subtópico), Enter (irmão), F2 (editar), Delete, Espaço (recolher), Ctrl+Z/Y, Ctrl+C/X/V, Ctrl+F.
+- Cada mapa é salvo como um registro próprio (`mapa:<id>` no Supabase ou `data/mapas/<id>.json` local). Outras pessoas veem as mudanças em até ~15 s.
 
-Para colocar um novo cliente no ar:
-1. **Clonar e deployar** (Vercel + Supabase — ver [DEPLOY.md](DEPLOY.md)). Defina `ADMIN_PASSWORD` própria e, se tiver domínio, `NEXT_PUBLIC_SITE_URL`.
-2. No `/admin`, aba **Marca & Cores**: nome, subtítulo, **cores** e **SEO** (título, descrição, imagem de compartilhamento). Campos de SEO em branco são gerados automaticamente a partir da marca.
-3. Aba **Menu & Contato**: WhatsApp, telefone, **sigla do conselho** (CRECI-SP, CRECI-RJ…), número, redes e a **mensagem padrão do WhatsApp**.
-4. Aba **Equipe & Funil**: monte a equipe do cliente (nomes, cor, emoji, função) e o **funil de etapas** do Kanban (nomes, ordem, dono de cada etapa). A última etapa é sempre a de “no site”.
-5. Aba **Seções da Home** / **Capa** / **Rodapé** / **Formulário**: textos, fotos e links.
+### Contatos
+Envios do formulário do site: marcar como lido, excluir, abrir no WhatsApp.
 
-O que é gerado automaticamente a partir da marca (sem tocar em código): título das abas do navegador, Open Graph/redes, nome no rodapé, tela de login e as mensagens de WhatsApp.
+## Dados e segurança
+- **Armazenamento:** com `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, tudo vai para a tabela `singletons` e o bucket `uploads`. Sem elas, vai para `data/*.json` e `public/uploads/`.
+- **Salvamento mesclado (várias pessoas no painel):** o servidor nunca sobrescreve a lista inteira.
+  - Imóveis: cada imóvel tem `updatedAt`, e a versão mais recente de cada um prevalece. Imóvel criado por outra pessoa é mantido, e só sai da base o que foi excluído explicitamente.
+  - Contatos: o painel só envia "lido" e exclusões. Um contato que chega pelo site com o painel aberto nunca é apagado.
+  - Limite: se duas pessoas editarem o **mesmo** imóvel ao mesmo tempo, vale a última edição daquele imóvel.
+- **Login:** a sessão é um cookie assinado (HMAC-SHA256) que expira em 7 dias e não contém a senha. Após 5 senhas erradas, o IP espera 5 minutos. Trocar `ADMIN_PASSWORD` (ou definir `SESSION_SECRET`) derruba todas as sessões.
+- Em **produção**, `ADMIN_PASSWORD` é obrigatória: sem ela o painel fica bloqueado. A senha padrão `paula2026` só vale em desenvolvimento.
 
-Como funciona:
-- Todo o conteúdo vive em `data/site-content.json` (criado no primeiro salvamento; até lá usa os padrões de `lib/content.js`).
-- As cores são aplicadas em tempo real via CSS variables (`components/ThemeStyle.jsx`) — não precisa rebuild.
-- Rotas de API: `app/api/admin/{login,logout,save,upload}`.
-
-### Armazenamento (arquivos ou Supabase)
-O site detecta automaticamente:
-- **Sem variáveis do Supabase** (PC local): salva em `data/*.json` e `public/uploads/`.
-- **Com Supabase configurado** (produção/Vercel): salva no banco (tabela `singletons`) e imagens no Storage.
-
-Para publicar grátis na **Vercel + Supabase**, siga o passo a passo em [DEPLOY.md](DEPLOY.md).
-
-### Aba Contatos
-Os envios do formulário de cadastro ficam em **/admin → Contatos** (marcar como lido, excluir, link de WhatsApp).
-
-### Captação e ciclo de vida do imóvel (aba Imóveis)
-Um imóvel existe na base **desde a captação** e só aparece no site quando é **publicado**.
-
-A aba tem duas visões (botão **Funil ▚ / Lista ☰** no topo):
-- **Funil (Kanban)** — visão padrão. Colunas = etapas de produção; arraste os cards (ou use as setas `◄ ►`) para avançar. Clique num card para editar num painel lateral.
-- **Lista** — visão em linhas, com reordenação (define a ordem da capa/destaques na home) e publicar/despublicar em massa.
-
-**Equipe (3 pessoas) e responsável:** cada imóvel tem um **Responsável agora** (chip colorido), escolhido à mão em cada card:
-- 🎥 **Guilherme** — fotos & vídeo (capta, sobe fotos, edita e sobe o vídeo).
-- 👩 **Paula** — corretora (passa as infos do imóvel).
-- 🧑‍💻 **Pedro** — anúncios & site (coleta as infos, publica e divulga).
-
-Dá para filtrar a aba por pessoa (chips `Responsável:` no topo) para cada um ver o que está na sua mão.
-
-- **Etapa** (funil de produção, com dono natural por etapa):
-  `1 Captação (🎥+👩) → 2 Fotos no Drive (🎥) → 3 Vídeo editado (🎥) → 4 Infos com a Paula (👩→🧑‍💻) → 5 No site (🧑‍💻)`.
-  O **vídeo editado** deixou de ser item de divulgação e virou etapa de produção do Guilherme.
-- **Situação** (badge no site): `Disponível` · `Exclusividade` · `Vendido` · `Alugado`.
-  Deixou de ser texto no título — vira badge automático (pílula de exclusividade; faixa diagonal para vendido/alugado).
-- **Publicado** (interruptor): desmarcado = **rascunho**, existe só no painel; marcado = aparece na home e na listagem.
-  Todo cadastro novo **nasce como rascunho** (na mão do Guilherme). Publicar avança a etapa para "No site"; no Kanban, arrastar um card para a coluna **5 · No site** publica.
-- **Material (Drive)**: campos para colar o link da **pasta de fotos** e do **vídeo** no Google Drive (botão "abrir"). O card mostra 📷/🎬 acesos quando o link existe.
-- **Divulgação** (checklist de marketing do Pedro, interno): `Carrossel (Instagram)` · `Reels (Instagram)` · `Anúncio (Meta Ads)`.
-  A lista mostra o progresso (`Divulg. N/3`) nos imóveis publicados.
-- **Ficha de captação**: cada imóvel tem **Proprietário** (nome, contato, exclusividade) e **Captação** (data, capturado por, observações), além de condomínio, andar e mobiliado.
-- **Filtros** no topo: `Todos · Rascunhos · Publicados · Divulgação pendente` + filtro por **Responsável**.
-
-> **Migração única (rodar uma vez):** imóveis antigos trazem `VENDIDO`/`EXCLUSIVIDADE` dentro do título.
-> Clique em **"Migrar títulos → Situação"** (aba Imóveis) e depois **Salvar**: o texto sai do título e vira o campo *Situação*.
-> É idempotente (pode clicar de novo sem risco) e **preserva as URLs** dos imóveis.
+## Novo cliente (revenda)
+1. Clonar e deployar (ver [DEPLOY.md](DEPLOY.md)) com `ADMIN_PASSWORD` própria e, se houver domínio, `NEXT_PUBLIC_SITE_URL`.
+2. **Templates → Marca & Cores:** nome, subtítulo, cores e SEO (campos de SEO em branco são gerados a partir da marca).
+3. **Templates → Menu & Contato:** WhatsApp, telefone, conselho (CRECI-SP…), redes e mensagem padrão do WhatsApp.
+4. **Equipe & Funil:** pessoas (nome, cor, emoji, função) e etapas do Kanban.
+5. **Tracking:** Pixel ID, token da CAPI (fica só no servidor) e webhook da planilha.
+6. Textos, fotos e links das seções em **Templates**.
 
 ## Design tokens
-A paleta âmbar (`#F6BC41`), tipografia e espaçamentos estão centralizados em
-`tailwind.config.js` e `app/globals.css` (`:root`).
-
-## Personalização rápida
-- **Telefone/WhatsApp**: `components/WhatsAppFloat.jsx` e `components/Footer.jsx`
-- **CRECI / contato**: `components/Footer.jsx`
-- **Imagens**: hoje apontam para o Unsplash; troque pelas fotos reais em cada componente.
-- **Bairros/cidades**: `components/CitiesSection.jsx`
+Cores e tipografia ficam em `tailwind.config.js` e `app/globals.css` (`:root`). As cores da marca são aplicadas em tempo real via CSS variables (`components/ThemeStyle.jsx`).

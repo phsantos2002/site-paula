@@ -57,6 +57,9 @@ Menu lateral → **Project Settings → API**:
    | `ADMIN_PASSWORD` | a senha do painel (ex: `adminpaula2026@`) |
    | `SUPABASE_URL` | a Project URL do passo 4 |
    | `SUPABASE_SERVICE_ROLE_KEY` | a chave service_role do passo 4 |
+   | `SESSION_SECRET` *(opcional)* | um texto longo e aleatório; trocar derruba todas as sessões do painel |
+
+   > `ADMIN_PASSWORD` é **obrigatória** em produção: sem ela o login do painel fica bloqueado.
 
 5. Clique em **Deploy**. Em ~1 min o site estará no ar (ex: `paula-regina.vercel.app`).
 

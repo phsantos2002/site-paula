@@ -8,3 +8,6 @@ npm-debug.log*
 
 # Contatos do formulário (dados pessoais — nunca versionar)
 /data/leads.json
+
+# Mapas mentais salvos localmente (modo sem Supabase)
+/data/mapas/

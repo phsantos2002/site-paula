@@ -11,7 +11,7 @@ export async function POST(req) {
   try {
     const data = await req.json();
     const list = Array.isArray(data) ? data : data.properties;
-    const properties = await saveProperties(list || []);
+    const properties = await saveProperties(list || [], Array.isArray(data?.deleted) ? data.deleted : []);
     return NextResponse.json({ ok: true, properties });
   } catch (e) {
     return NextResponse.json({ ok: false, error: "Falha ao salvar imóveis." }, { status: 500 });
