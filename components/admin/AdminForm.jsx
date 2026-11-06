@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { formatBRL } from "@/lib/format";
 import MapaMentalTab from "./MapaMentalTab";
+import ImportarImoveis from "./ImportarImoveis";
 import {
   MultiImageField, linesToArray, Card, Field, SecretField, NumberField, SelectField, DriveLinkField, LabeledSelect, Mini, TextArea, ColorField, ImageField, LinkEditor, ArrayEditor,
 } from "./fields";
@@ -377,7 +378,7 @@ export default function AdminForm({ initial, initialProperties = [], initialLead
 
         <div className="min-w-0 flex-1 space-y-6 overflow-x-clip">
           {tab === "contatos" && <ContatosTab leads={leads} setLeads={setLeadsTracked} />}
-          {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setPropertiesTracked} data={data} focusId={focusPropId} onFocusDone={() => setFocusPropId(null)} />}
+          {tab === "imoveis" && <ImoveisTab properties={properties} setProperties={setPropertiesTracked} data={data} onImportConfig={(v) => setSection("importacao", v)} focusId={focusPropId} onFocusDone={() => setFocusPropId(null)} />}
           {tab === "mapa" && <MapaMentalTab properties={properties} brand={data.brand} onOpenProperty={abrirImovelDoMapa} onCreateProperty={criarImovelDoMapa} />}
           {tab === "equipe" && <EquipeTab data={data} setSection={setSection} />}
           {tab === "template" && <TemplatesTab data={data} patch={patch} setSection={setSection} nav={tplNav} setNav={setTplNav} notify={setMsg} />}
@@ -844,8 +845,9 @@ function FilterGroup({ label, value, onChange, options }) {
   );
 }
 
-function ImoveisTab({ properties, setProperties, data, focusId, onFocusDone }) {
+function ImoveisTab({ properties, setProperties, data, onImportConfig, focusId, onFocusDone }) {
   const [openIdx, setOpenIdx] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
   // Pedido externo para abrir um imóvel no editor (vindo do mapa mental).
   useEffect(() => {
     if (!focusId) return;
@@ -1015,6 +1017,7 @@ function ImoveisTab({ properties, setProperties, data, focusId, onFocusDone }) {
       {/* Cadastrar + busca + visão */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button onClick={add} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-ink-cta hover:bg-primary-hover">+ Cadastrar novo imóvel</button>
+        <button onClick={() => setImportOpen(true)} className="rounded-lg border border-black/15 bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-black/5">⇣ Importar de outro site</button>
         <div className="relative min-w-[200px] flex-1">
           <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar código, título ou bairro" className="h-10 w-full rounded-lg border border-inputborder pl-9 pr-3 text-sm outline-none focus:border-primary" />
@@ -1203,6 +1206,17 @@ function ImoveisTab({ properties, setProperties, data, focusId, onFocusDone }) {
       )}
 
       {/* Entrada rápida de imóvel (infos básicas + upload de fotos e/ou Drive) */}
+      {importOpen && (
+        <ImportarImoveis
+          properties={properties}
+          setProperties={setProperties}
+          config={data?.importacao}
+          onConfig={onImportConfig}
+          funnel={funnel}
+          nextCode={nextCode}
+          onClose={() => { setImportOpen(false); setOpenIdx(null); }}
+        />
+      )}
       {quickAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4" onClick={() => setQuickAdd(null)}>
           <div className="my-auto flex max-h-[88dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>

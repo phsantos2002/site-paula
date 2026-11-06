@@ -53,6 +53,7 @@ Abas: **Imóveis**, **Mapa mental**, **Equipe & Funil**, **Templates** (marca, c
 - Cadastro novo nasce como **rascunho** (não aparece no site). **Situação** vira badge no site: disponível, exclusividade, vendido, alugado.
 - **Entrada rápida** (texto bruto, fotos, operação, valor), links do Drive, checklist de divulgação (carrossel, reels, anúncio) e organizador da vitrine (Capa, Destaques e Listagem com ordens independentes).
 - Fotos do iPhone (HEIC) são convertidas para JPG (no navegador e, como garantia, no servidor).
+- **Importar de outro site** (ex.: a imobiliária parceira): informe o site e os bairros. O painel lê todos os imóveis à venda, ordena pelas melhores oportunidades (R$/m² abaixo da mediana do mesmo condomínio/prédio ou do mesmo tipo no bairro), você confere a lista e importa ficha, fotos, descrição e características, com opção de substituir todos os imóveis atuais. A descrição sai sem nome, telefones e CRECI da origem; o código e o link de origem ficam nas observações da captação. O leitor (`lib/importador.js`) segue o formato atual do site da fonte.
 
 ### Mapa mental
 Editor de mapas mentais no estilo MindMaster, dentro do painel:
